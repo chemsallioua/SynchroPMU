@@ -11,7 +11,7 @@ int ipDFT(double complex* Xdft, int n_bins, double df, double* amp, double* ph, 
 void e_ipDFT(double complex* Xdft, int n_bins,int window_len, double df, int P, double norm_factor, double* amp, double* ph, double* freq);
 void pureTone(double complex* Xpure, int n_bins, double f, double ampl, double phse, double df, int N,double norm_factor);
 
-void find_largest_three_indexes(float arr[], int size, int *k1, int *k2, int *k3);
+void find_largest_three_indexes(double arr[], int size, int *k1, int *k2, int *k3);
 
 int main() {
 
@@ -189,7 +189,7 @@ void pureTone(double complex* Xpure, int n_bins, double f, double ampl, double p
 
     
 
-void find_largest_three_indexes(float arr[], int size, int *k1, int *k2, int *k3) {
+void find_largest_three_indexes(double arr[], int size, int *k1, int *k2, int *k3) {
   int i;
   float first, second, third;
   int first_index, second_index, third_index;
