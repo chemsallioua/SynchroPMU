@@ -108,18 +108,20 @@ double hann(double* out_ptr, unsigned int out_len){
 }
 int ipDFT(double complex* Xdft, int n_bins, double df, double* amp, double* ph, double* freq){
 
-    int j, k1, k2;
+    int j, k1, k2,k3;
     double Xdft_mag[n_bins]; //magnitude of dft
 
     for(j = 0; j < n_bins; j++){        
         Xdft_mag[j] = cabs(Xdft[j]); 
     }
 
-    find2LargstIndx(Xdft_mag, n_bins,&k1,&k2);
 
-    int sigma = ( k2 > k1 ) ? 1:-1; //sign of the delta correction
-    double delta_corr = sigma*(2*Xdft_mag[k1+sigma]-Xdft_mag[k1])/(Xdft_mag[k1+sigma]+Xdft_mag[k1]);
-    if(delta_corr == 0){
+    find_largest_three_indexes(Xdft_mag, n_bins, &k1, &k2, &k3);
+
+   
+    double delta_corr = 2*(Xdft_mag[k3]-Xdft_mag[k2])/(Xdft_mag[k2]+Xdft_mag[k3]+2*Xdft_mag[k1]);
+
+    if(delta_corr <= pow(10,-12)){
 
         *amp =  Xdft_mag[k1];  
         *ph = carg(Xdft[k1]);
@@ -147,7 +149,7 @@ void e_ipDFT(double complex* Xdft, int n_bins,int window_len, double df, int P, 
     double complex X_neg;
     double complex X_pos[n_bins];
     double X_pos_mag[n_bins];
-    int k1, k2, sigma;
+    int k1, k2,k3, sigma;
     double delta_corr;  
 
     for(p=0 ; p<P ; p++){ //e-ipdft iterations-------------------------------------
@@ -156,10 +158,9 @@ void e_ipDFT(double complex* Xdft, int n_bins,int window_len, double df, int P, 
             X_pos[j] = Xdft[j] - X_neg; 
             X_pos_mag[j] = cabs(X_pos[j]);
         }
-        find2LargstIndx(X_pos_mag, n_bins,&k1,&k2);
+        find_largest_three_indexes(X_pos_mag, n_bins, &k1, &k2, &k3);
 
-        sigma = ( k2 > k1 ) ? 1:-1; 
-        delta_corr =sigma*(2*X_pos_mag[k1+sigma]-X_pos_mag[k1])/(X_pos_mag[k1+sigma]+X_pos_mag[k1]);
+        double delta_corr = 2*(X_pos_mag[k3]-X_pos_mag[k2])/(X_pos_mag[k2]+X_pos_mag[k3]+2*X_pos_mag[k1]);
         Amp = X_pos_mag[k1]*fabs((delta_corr*delta_corr-1)*(M_PI*delta_corr)/sin(M_PI*delta_corr)); 
         Phse = carg(X_pos[k1])-M_PI*delta_corr;
         Freq = (k1+delta_corr)*df;
