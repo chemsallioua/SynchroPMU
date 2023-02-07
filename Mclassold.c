@@ -14,7 +14,7 @@ void find2LargstIndx(double* array, int array_len,int* k1, int* k2);
 
 int main() {
 
-    double amp=2;
+    double amp=5;
     double ph=1;
     double freq= 50;
     double ki = 0.1;
