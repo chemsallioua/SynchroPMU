@@ -20,8 +20,8 @@ int main() {
     double freq= 50;
     double ki = 0.1;
     double fi = 25;
-    double n =5000 ;
-    double fs = n/5*50;
+    double n =2048 ;
+    double fs = 25600;
     
     double dt = 1/fs;
     double df = fs/n;
@@ -120,6 +120,7 @@ int ipDFT(double complex* Xdft, int n_bins, double df, double* amp, double* ph, 
 
    
     double delta_corr = 2*(Xdft_mag[k3]-Xdft_mag[k2])/(Xdft_mag[k2]+Xdft_mag[k3]+2*Xdft_mag[k1]);
+    printf("delta:%1.0lf\n",delta_corr);
 
     if(delta_corr <= pow(10,-12)){
 
@@ -161,6 +162,7 @@ void e_ipDFT(double complex* Xdft, int n_bins,int window_len, double df, int P, 
         find_largest_three_indexes(X_pos_mag, n_bins, &k1, &k2, &k3);
 
         double delta_corr = 2*(X_pos_mag[k3]-X_pos_mag[k2])/(X_pos_mag[k2]+X_pos_mag[k3]+2*X_pos_mag[k1]);
+        printf("delta1:%1.0lf\n",delta_corr);
         Amp = X_pos_mag[k1]*fabs((delta_corr*delta_corr-1)*(M_PI*delta_corr)/sin(M_PI*delta_corr)); 
         Phse = carg(X_pos[k1])-M_PI*delta_corr;
         Freq = (k1+delta_corr)*df;
