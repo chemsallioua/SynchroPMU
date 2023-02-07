@@ -10,11 +10,12 @@ double complex whDFT(double k, int N);
 int ipDFT(double complex* Xdft, int n_bins, double df, double* amp, double* ph, double* freq);
 void e_ipDFT(double complex* Xdft, int n_bins,int window_len, double df, int P, double norm_factor, double* amp, double* ph, double* freq);
 void pureTone(double complex* Xpure, int n_bins, double f, double ampl, double phse, double df, int N,double norm_factor);
-void find2LargstIndx(double* array, int array_len,int* k1, int* k2);
+
+void find_largest_three_indexes(float arr[], int size, int *k1, int *k2, int *k3);
 
 int main() {
 
-    double amp=5;
+    double amp=2;
     double ph=1;
     double freq= 50;
     double ki = 0.1;
@@ -184,30 +185,35 @@ void pureTone(double complex* Xpure, int n_bins, double f, double ampl, double p
       Xpure[i] = wf(i, f, ampl, phse, df, N, norm_factor) + wf(i, -f, ampl, -phse, df, N, norm_factor);
     }  
 }
-void find2LargstIndx(double* array, int array_len,int* k1, int* k2){
 
-    double temp_max, temp_second_max;
-    if(array[0] > array[1]) {
-        *k1 = 0;
-        temp_max = array[0];
-        *k2  = 1;
-        temp_second_max  = array[1];
-    } else {
-        *k1 = 1;
-        temp_max = array[1];
-        *k2  = 0;
-        temp_second_max  = array[0];
+    
+
+void find_largest_three_indexes(float arr[], int size, int *k1, int *k2, int *k3) {
+  int i;
+  float first, second, third;
+  int first_index, second_index, third_index;
+  first = second = third = -2147483647.0f;
+  
+  for (i = 0; i < size; i++) {
+    if (arr[i] > first) {
+      third = second;
+      second = first;
+      first = arr[i];
+      third_index = second_index;
+      second_index = first_index;
+      first_index = i;
+    } else if (arr[i] > second) {
+      third = second;
+      second = arr[i];
+      third_index = second_index;
+      second_index = i;
+    } else if (arr[i] > third) {
+      third = arr[i];
+      third_index = i;
     }
-    int i;
-    for(i = 2; i < array_len; i++) {
-        if( temp_max < array[i] ) {
-            temp_second_max = temp_max;
-            *k2 = *k1;
-            temp_max = array[i];
-            *k1 = i;
-        } else if( temp_second_max < array[i] ) {
-            temp_second_max =  array[i];
-            *k2 = i;
-        }
-    }
+  }
+  
+  *k1 = first_index;
+  *k2 = second_index;
+  *k3 = third_index;
 }
