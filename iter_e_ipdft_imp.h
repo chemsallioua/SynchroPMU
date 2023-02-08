@@ -16,20 +16,37 @@
 #define debug_bins(...)
 #endif
 
-double dft_r(double* in_ptr, double complex* out_ptr , unsigned int out_len, int n_bins);
-double hann(double* out_ptr, unsigned int out_len);
-double complex wf(int k, double f, double ampl, double phse, double df, int N,double norm_factor);
-double complex D(double k, double N);
-double complex whDFT(double k, int N);
-int ipDFT(double complex* Xdft, int n_bins, double df, double* amp, double* ph, double* freq);
-void e_ipDFT(double complex* Xdft, int n_bins,int window_len, double df, int P, double norm_factor, double* amp, double* ph, double* freq);
-void iter_e_ipDFT(complex* dftbins, complex* Xi, complex* Xf,double* amp_f,double* ph_f,double* freq_f, int n_bins, int n, double df, int P, int Q, double norm_factor);
+typedef struct {
+    unsigned int win_len;
+    double fs;
+    unsigned int n_bins;
+    unsigned int P;
+    unsigned int Q;
+    double interf_trig;
+} estimator_config;
 
-void pureTone(double complex* Xpure, int n_bins, double f, double ampl, double phse, double df, int N,double norm_factor);
-void print_bins(complex *bins, int n_bins, double df, char* str);
+typedef struct{
+    double amp;
+    double ph;
+    double freq;
+}synchrophasor;
 
-void find_largest_three_indexes(double arr[], int size, int *k1, int *k2, int *k3);
+inline float wrap_angle(float rad_angle){
+	float temp = fmod(rad_angle + M_PI, 2*M_PI);
+	if(temp < 0.0){
+        temp += 2.0*M_PI;
+		}
 
-int estimate_synchrophasor(double * signal_window, int n, int fs, int n_bins, int P, int Q, double epsilon,double* out_freq, double* out_amp, double* out_ph);
+	return temp - M_PI;
+}
+
+//pmu estimator initialization
+int pmu_init(void* cfg);
+
+//synchrophasor estimation
+int pmu_estimate(double * signal_window, synchrophasor* out_phasor);
+
+//pmu estimator deinitialization
+int pmu_deinit();
 
 #endif /* ITER_E_IPDFT_IMP_H */
