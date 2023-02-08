@@ -10,6 +10,7 @@ double complex whDFT(double k, int N);
 int ipDFT(double complex* Xdft, int n_bins, double df, double* amp, double* ph, double* freq);
 void e_ipDFT(double complex* Xdft, int n_bins,int window_len, double df, int P, double norm_factor, double* amp, double* ph, double* freq);
 void pureTone(double complex* Xpure, int n_bins, double f, double ampl, double phse, double df, int N,double norm_factor);
+void print_bins(complex *bins, int n_bins, double df, char* str);
 
 void find_largest_three_indexes(double arr[], int size, int *k1, int *k2, int *k3);
 
@@ -25,8 +26,9 @@ int main() {
     
     double dt = 1/fs;
     double df = fs/n;
-    int P = 3;
-    int Q = 3;
+    
+    int P = 1;
+    int Q = 1;
     double signal_window[(int)n];
     double hann_window[(int)n];
 
@@ -37,12 +39,23 @@ int main() {
         signal_window[i] = (amp*cos(2*M_PI*freq*dt*i + ph) + amp*ki*cos(2*M_PI*fi*dt*i + ph))*hann_window[i];
     }
 
+    printf("\n== M-Class Parameters ========================================================\n");
+    printf("Signal Fundamental Component | Amp(V): %0.2lf | Ph(rad): %0.2lf | Freq(Hz): %0.2lf\n", amp, ph, freq);
+    printf("Interference | I-Mag(%%): %0.2lf | I-Freq(Hz): %0.2lf\n", ki*100, fi);
+    printf("------------------------------------------------------------------------------\n");
+    printf("Window | SamplingFreq(kS/s): %0.3lf | NCycles: %1.0f | FreqResolution: %0.2lf\n", (float)fs/1000, (n*50/fs), df);
+    printf("Iterations | P: %d | Q: %d \n", P, Q);
+    printf("===============================================================================\n");
+
+
     //Ipdft starts here////////////////////////////////////////////////////////////
 
     unsigned int n_bins = 11;
     double complex dftbins[n_bins];
 
     dft_r(signal_window, dftbins, (unsigned int)n , n_bins);
+
+    print_bins(dftbins, n_bins, df, "Input Signal DFT BINS");
 
     double freq_f, amp_f, ph_f;
     double freq_i, amp_i, ph_i;
@@ -111,22 +124,30 @@ int ipDFT(double complex* Xdft, int n_bins, double df, double* amp, double* ph, 
     int j, k1, k2,k3;
     double Xdft_mag[n_bins]; //magnitude of dft
 
+    printf("\n[ipDFT] ===============================================\n");
+    
+    print_bins(Xdft, n_bins, df, "DFT BINS IN ipDFT");
+
     for(j = 0; j < n_bins; j++){        
         Xdft_mag[j] = cabs(Xdft[j]); 
     }
 
-
     find_largest_three_indexes(Xdft_mag, n_bins, &k1, &k2, &k3);
 
-   
-    double delta_corr = 2*(Xdft_mag[k3]-Xdft_mag[k2])/(Xdft_mag[k2]+Xdft_mag[k3]+2*Xdft_mag[k1]);
-    printf("delta:%1.0lf\n",delta_corr);
+    printf("[%s] k1: %d, k2: %d, k3: %d\n",__FUNCTION__, k1,k2,k3);
 
-    if(delta_corr <= pow(10,-12)){
+    double delta_corr = 2*(Xdft_mag[k3]-Xdft_mag[k2])/(Xdft_mag[k2]+Xdft_mag[k3]+2*Xdft_mag[k1]);
+
+    printf("[%s] delta_corr: %lf\n",__FUNCTION__,delta_corr);
+
+    if(fabs(delta_corr) <= pow(10,-12)){
 
         *amp =  Xdft_mag[k1];  
         *ph = carg(Xdft[k1]);
         *freq = k1*df;
+
+        printf("[%s] freq: %.10lf, amp (not normalized): %.3lf, ph: %.3lf\n",__FUNCTION__, *freq, *amp, *ph);
+        printf("\n========================================================\n\n");
 
         return 1; 
     }
@@ -135,6 +156,9 @@ int ipDFT(double complex* Xdft, int n_bins, double df, double* amp, double* ph, 
         *amp = Xdft_mag[k1]*fabs((delta_corr*delta_corr-1)*(M_PI*delta_corr)/sin(M_PI*delta_corr)); 
         *ph = carg(Xdft[k1])-M_PI*delta_corr;
         *freq = (k1+delta_corr)*df;
+
+        printf("[%s] freq: %.10lf, amp (not normalized): %.3lf, ph: %.3lf\n",__FUNCTION__, *freq, *amp, *ph);
+        printf("\n========================================================\n\n");
 
         return 0;
     }
@@ -176,17 +200,26 @@ double complex whDFT(double k, int N){
     return -0.25*D(k-1,N) + 0.5*D(k,N) - 0.25*D(k+1,N); 
 }
 double complex D(double k, double N){
+    //printf("k: %f, N:%f, D: %f \n",k, N, cabs(cexp(-I*M_PI*k*(N-1)/N)*sin(M_PI*k)/sin(M_PI*k/N)));
     return cexp(-I*M_PI*k*(N-1)/N)*sin(M_PI*k)/sin(M_PI*k/N);
 }
 double complex wf(int k, double f, double ampl, double phse, double df, int N,double norm_factor){
+    //printf("k: %d, wf: %f \n", k, cabs(ampl*cexp(I*phse)*whDFT(k-(f/df), N)/norm_factor));
     return ampl*cexp(I*phse)*whDFT(k-(f/df), N)/norm_factor;
 }
 void pureTone(double complex* Xpure, int n_bins, double f, double ampl, double phse, double df, int N,double norm_factor){
+    printf("\n[pureTone] ===============================================\n");
     int i;
     for (i = 0; i < n_bins; i++)
     {
       Xpure[i] = wf(i, f, ampl, phse, df, N, norm_factor) + wf(i, -f, ampl, -phse, df, N, norm_factor);
-    }  
+    } 
+
+    
+    printf("n_bins: %d | f: %0.3lf | ampl: %0.3lf | phse: %0.3lf | df: %0.3lf | N: %d | norm_factor: %0.3lf\n", n_bins, f, ampl, phse, df, N, norm_factor);
+    print_bins(Xpure, n_bins, df, "DFT BINS PURE TONE");
+    printf("========================================================\n\n");
+
 }
 
     
@@ -219,4 +252,22 @@ void find_largest_three_indexes(double arr[], int size, int *k1, int *k2, int *k
   *k1 = first_index;
   *k2 = second_index;
   *k3 = third_index;
+}
+
+void print_bins(complex *bins, int n_bins, double df, char* str){
+
+
+    printf("\n--%s---------------  ---  --  -\n Indx", str);
+    for(int i = 0; i < n_bins; i++){
+        printf("|%6d", i);
+    }
+    printf("|\n Freq");
+    for(int i = 0; i < n_bins; i++){
+        printf("|%6.1f", i*df);
+    }
+    printf("|\n Bins");
+    for(int i = 0; i < n_bins; i++){
+        printf("|%6.1f", cabs(bins[i]));
+    }
+    printf("|\n---------------------------  ---  --  -\n\n");
 }
