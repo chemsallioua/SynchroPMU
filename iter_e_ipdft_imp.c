@@ -105,6 +105,11 @@ int pmu_estimate(double * signal_window, synchrophasor* out_phasor){
         return -1;
     }
 
+    int i,j;
+    for(i=0; i<g_win_len; i++){
+        signal_window[i]= signal_window[i]*g_hann_window[i];
+    }
+
     double E = dft_r(signal_window, g_dftbins, g_win_len , g_n_bins);
 
     debug_bins(g_dftbins, g_n_bins, g_df, "Input Signal DFT BINS");
@@ -113,7 +118,7 @@ int pmu_estimate(double * signal_window, synchrophasor* out_phasor){
     pureTone(g_Xf, g_phasor);
 
     double E_diff = 0;
-    int j;
+    
     for ( j = 0; j < g_n_bins; j++){
         g_Xi[j] = g_dftbins[j] - g_Xf[j];
         E_diff += cabs(g_Xi[j]*g_Xi[j]); 

@@ -21,15 +21,13 @@ int main() {
     double epsilon = 0.0033;
 
     double signal_window[(int)n];
-    double hann_window[(int)n];
-    double norm_factor = hann(hann_window, n);
 
     double dt = 1/fs;
     double df = fs/n;
 
     int i, j;
     for(i=0; i<n; i++){
-        signal_window[i] = (amp*cos(2*M_PI*freq*dt*i + ph) + amp*ki*cos(2*M_PI*fi*dt*i + ph))*hann_window[i];
+        signal_window[i] = (amp*cos(2*M_PI*freq*dt*i + ph) + amp*ki*cos(2*M_PI*fi*dt*i + ph));
     }
 
     pmu_config.win_len = n;
