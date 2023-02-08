@@ -147,7 +147,7 @@ int ipDFT(double complex* Xdft, int n_bins, double df, double* amp, double* ph, 
         *freq = k1*df;
 
         printf("[%s] freq: %.10lf, amp (not normalized): %.3lf, ph: %.3lf\n",__FUNCTION__, *freq, *amp, *ph);
-        printf("\n========================================================\n\n");
+        printf("\n[END ipDFT] ===============================================\n\n");
 
         return 1; 
     }
@@ -158,7 +158,7 @@ int ipDFT(double complex* Xdft, int n_bins, double df, double* amp, double* ph, 
         *freq = (k1+delta_corr)*df;
 
         printf("[%s] freq: %.10lf, amp (not normalized): %.3lf, ph: %.3lf\n",__FUNCTION__, *freq, *amp, *ph);
-        printf("\n========================================================\n\n");
+        printf("\n[END ipDFT] ===============================================\n\n");
 
         return 0;
     }
@@ -177,20 +177,32 @@ void e_ipDFT(double complex* Xdft, int n_bins,int window_len, double df, int P, 
     int k1, k2,k3, sigma;
     double delta_corr;  
 
+    printf("\n[e_ipDFT] ===============================================\n");
+
     for(p=0 ; p<P ; p++){ //e-ipdft iterations-------------------------------------
+    
+        printf("\n[ITERATION: %d] ------------\n", p);
+
         for(j = 0; j < n_bins; j++){ 
             X_neg = wf(j,-Freq, Amp ,-Phse, df, window_len, norm_factor);           
             X_pos[j] = Xdft[j] - X_neg; 
             X_pos_mag[j] = cabs(X_pos[j]);
         }
+        print_bins(X_pos, n_bins, df, "DFT BINS IN e_ipDFT");
         find_largest_three_indexes(X_pos_mag, n_bins, &k1, &k2, &k3);
+        printf("[%s] k1: %d, k2: %d, k3: %d\n",__FUNCTION__, k1,k2,k3);
 
         double delta_corr = 2*(X_pos_mag[k3]-X_pos_mag[k2])/(X_pos_mag[k2]+X_pos_mag[k3]+2*X_pos_mag[k1]);
-        printf("delta1:%1.0lf\n",delta_corr);
+        printf("[%s] delta_corr: %lf\n",__FUNCTION__,delta_corr);
         Amp = X_pos_mag[k1]*fabs((delta_corr*delta_corr-1)*(M_PI*delta_corr)/sin(M_PI*delta_corr)); 
         Phse = carg(X_pos[k1])-M_PI*delta_corr;
         Freq = (k1+delta_corr)*df;
+        printf("[%s] freq: %.10lf, amp (not normalized): %.3lf, ph: %.3lf\n",__FUNCTION__, Freq, Amp, Phse);
+        printf("\nEND ITERATION --------------------------\n", p);
+        
     }
+    printf("\n[END e_ipDFT]========================================================\n\n");
+
     *amp =  Amp;  
     *ph = Phse;
     *freq = Freq;
@@ -218,7 +230,7 @@ void pureTone(double complex* Xpure, int n_bins, double f, double ampl, double p
     
     printf("n_bins: %d | f: %0.3lf | ampl: %0.3lf | phse: %0.3lf | df: %0.3lf | N: %d | norm_factor: %0.3lf\n", n_bins, f, ampl, phse, df, N, norm_factor);
     print_bins(Xpure, n_bins, df, "DFT BINS PURE TONE");
-    printf("========================================================\n\n");
+    printf("[END pureTone] ================================================\n\n");
 
 }
 
