@@ -66,26 +66,26 @@ int main() {
     if(!ipDFT(dftbins, n_bins, df, &amp_f, &ph_f, &freq_f)){
         e_ipDFT(dftbins, n_bins, n, df, P, norm_factor, &amp_f, &ph_f, &freq_f);
     }
-    pureTone(Xf, n_bins, freq_f, amp_f, ph_f, df, n , norm_factor);
-    for ( j = 0; j < n_bins; j++){
-        Xi[j] = dftbins[j] - Xf[j];
-    }
-    if(!ipDFT(Xi, n_bins, df, &amp_i, &ph_i, &freq_i)){ 
         //printf("dft------------------------\n");
-        for (i = 0; i < Q; i++)
-        {   
+    for (i = 0; i < Q; i++)
+    {   
+        pureTone(Xf, n_bins, freq_f, amp_f, ph_f, df, n , norm_factor);
+        for ( j = 0; j < n_bins; j++){
+            Xi[j] = dftbins[j] - Xf[j];
+        }
+        if(!ipDFT(Xi, n_bins, df, &amp_i, &ph_i, &freq_i)){
             e_ipDFT(Xi, n_bins, n, df, P, norm_factor, &amp_i, &ph_i, &freq_i);
-            pureTone(Xi_pure, n_bins, freq_i, amp_i, ph_i, df, n , norm_factor);
-            for ( j = 0; j < n_bins; j++)
-            {
-                Xf[j] = dftbins[j] - Xi_pure[j];
-            }
-            if(!ipDFT(Xf, n_bins, df, &amp_f, &ph_f, &freq_f)){
-                e_ipDFT(Xf, n_bins, n, df, P, norm_factor, &amp_f, &ph_f, &freq_f);
-            }
+        }
+        pureTone(Xi_pure, n_bins, freq_i, amp_i, ph_i, df, n , norm_factor);
+        for ( j = 0; j < n_bins; j++)
+        {
+            Xf[j] = dftbins[j] - Xi_pure[j];
+        }
+        if(!ipDFT(Xf, n_bins, df, &amp_f, &ph_f, &freq_f)){
+            e_ipDFT(Xf, n_bins, n, df, P, norm_factor, &amp_f, &ph_f, &freq_f);
         }
     }
-
+    
     //Ipdft finishes here////////////////////////////////////////////////////////////
 
     printf("freq: %.10lf, amp: %.10lf, ph: %.10lf\n", freq_f, 2*amp_f/norm_factor, ph_f);
