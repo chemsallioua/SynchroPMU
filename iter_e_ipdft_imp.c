@@ -1,86 +1,26 @@
-#include <stdio.h>
-#include <complex.h>
-#include <math.h>
+#include "iter_e_ipdft_imp.h"
 
-#define DEBUG 0
+int estimate_synchrophasor(double * signal_window, int n, int fs, int n_bins, int P, int Q, double epsilon,double* out_freq, double* out_amp, double* out_ph){
 
-#if DEBUG
-#define debug(...) printf(__VA_ARGS__)
-#define debug_bins(...) print_bins(__VA_ARGS__)
-#else
-#define debug(...)
-#define debug_bins(...)
-#endif
-
-double dft_r(double* in_ptr, double complex* out_ptr , unsigned int out_len, int n_bins);
-double hann(double* out_ptr, unsigned int out_len);
-double complex wf(int k, double f, double ampl, double phse, double df, int N,double norm_factor);
-double complex D(double k, double N);
-double complex whDFT(double k, int N);
-int ipDFT(double complex* Xdft, int n_bins, double df, double* amp, double* ph, double* freq);
-void e_ipDFT(double complex* Xdft, int n_bins,int window_len, double df, int P, double norm_factor, double* amp, double* ph, double* freq);
-void iter_e_ipDFT(complex* dftbins, complex* Xi, complex* Xf,double* amp_f,double* ph_f,double* freq_f, int n_bins, int n, double df, int P, int Q, double norm_factor);
-
-void pureTone(double complex* Xpure, int n_bins, double f, double ampl, double phse, double df, int N,double norm_factor);
-void print_bins(complex *bins, int n_bins, double df, char* str);
-
-void find_largest_three_indexes(double arr[], int size, int *k1, int *k2, int *k3);
-
-int main() {
-
-    double amp=2;
-    double ph=1;
-    double freq= 50;
-    double ki = 0.1;
-    double fi = 25;
-    double n =2048 ;
-    double fs = 25600;
-    
-    double dt = 1/fs;
     double df = fs/n;
-    
-    int P = 3;
-    int Q = 3;
-    double epsilon = 0.0033;
 
-    double signal_window[(int)n];
     double hann_window[(int)n];
-
-    double norm_factor = hann(hann_window, n);
-
-    int i, j;
-    for(i=0; i<n; i++){
-        signal_window[i] = (amp*cos(2*M_PI*freq*dt*i + ph) + amp*ki*cos(2*M_PI*fi*dt*i + ph))*hann_window[i];
-    }
-
-    printf("\n== M-Class Parameters ========================================================\n");
-    printf("Signal Fundamental Component | Amp(V): %0.2lf | Ph(rad): %0.2lf | Freq(Hz): %0.2lf\n", amp, ph, freq);
-    printf("Interference | I-Mag(%%): %0.2lf | I-Freq(Hz): %0.2lf\n", ki*100, fi);
-    printf("------------------------------------------------------------------------------\n");
-    printf("Window | SamplingFreq(kS/s): %0.3lf | NCycles: %1.0f | FreqResolution: %0.2lf\n", (float)fs/1000, (n*50/fs), df);
-    printf("Iterations | P: %d | Q: %d \n", P, Q);
-    printf("===============================================================================\n");
-
-    //Ipdft starts here////////////////////////////////////////////////////////////
-
-    unsigned int n_bins = 11;
     double complex dftbins[n_bins];
 
+    double norm_factor = hann(hann_window, n);
     double E = dft_r(signal_window, dftbins, (unsigned int)n , n_bins);
 
     debug_bins(dftbins, n_bins, df, "Input Signal DFT BINS");
 
     double freq_f, amp_f, ph_f;
-    
     double complex Xf[n_bins];
     double complex Xi[n_bins];
-    
-
     
     e_ipDFT(dftbins, n_bins, n, df, P, norm_factor, &amp_f, &ph_f, &freq_f);
     pureTone(Xf, n_bins, freq_f, amp_f, ph_f, df, n , norm_factor);
 
     double E_diff = 0;
+    int j;
     for ( j = 0; j < n_bins; j++){
         Xi[j] = dftbins[j] - Xf[j];
         E_diff += cabs(Xi[j]*Xi[j]); 
@@ -91,15 +31,14 @@ int main() {
     if (E_diff > epsilon*E){
         iter_e_ipDFT(dftbins, Xi, Xf, &amp_f, &ph_f, &freq_f, n_bins, n, df, P, Q, norm_factor);
     }
-    //Ipdft finishes here////////////////////////////////////////////////////////////
-    
-    printf("\n---- [Results] ----------------------------------------------------------\n");
-    printf("|\tFREQ: %.10lf | AMP: %.10lf | PH: %.10lf \t|\n", freq_f, 2*amp_f/norm_factor, ph_f);
-    printf("-------------------------------------------------------------------------\n");
+
+    *out_freq = freq_f;
+    *out_amp = 2*amp_f/norm_factor;
+    *out_ph = ph_f;
 
     return 0;
-}
 
+}
 double dft_r(double* in_ptr, double complex* out_ptr , unsigned int input_len, int n_bins){
     // debug("dft------------------------\n");
     int k,n;

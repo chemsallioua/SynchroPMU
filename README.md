@@ -1,12 +1,11 @@
 # __m-class-pmu__
 A C implementtation of the M-Class Iterative Interpolated DFT Synchrophasor Estimattion Algorithm
-# Version 1.0.0
+# Version 1.1.0
 Updates:
-- Added debug logging feature
-- Adapted the algorithm to match the Iterative Enhanced Interpolated DFT
-
+- Cleaned many aspects of the code
+- Integrated all the functions of the Iterative Enhanced Interpolated DFT into an implementation file __iter_e_ipdft_imp.c__ and its header file __iter_e_ipdft_imp.h__ 
 ## __Activating Debug Logs__
-change the value of the _#define DEBUG 0_ in the __Mclass.c__ file
+change the value of the _#define DEBUG 0_ in the __iter_e_ipdft_imp.h__ file
 
 to deactivate:
 
@@ -18,4 +17,4 @@ or to activate
 ## __Running the program (tested on Windows)__
 to compile and run the code simply run:
 
-    gcc .\Mclass.c -o Mclass | ./Mclass.exe
+    gcc main.c iter_e_ipdft_imp.c -o main.exe | ./main.exe
