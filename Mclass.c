@@ -2,12 +2,14 @@
 #include <complex.h>
 #include <math.h>
 
-#define DEBUG 1
+#define DEBUG 0
 
 #if DEBUG
 #define debug(...) printf(__VA_ARGS__)
+#define debug_bins(...) print_bins(__VA_ARGS__)
 #else
 #define debug(...)
+#define debug_bins(...)
 #endif
 
 void dft_r(double* in_ptr, double complex* out_ptr , unsigned int out_len, int n_bins);
@@ -47,13 +49,13 @@ int main() {
         signal_window[i] = (amp*cos(2*M_PI*freq*dt*i + ph) + amp*ki*cos(2*M_PI*fi*dt*i + ph))*hann_window[i];
     }
 
-    debug("\n== M-Class Parameters ========================================================\n");
-    debug("Signal Fundamental Component | Amp(V): %0.2lf | Ph(rad): %0.2lf | Freq(Hz): %0.2lf\n", amp, ph, freq);
-    debug("Interference | I-Mag(%%): %0.2lf | I-Freq(Hz): %0.2lf\n", ki*100, fi);
-    debug("------------------------------------------------------------------------------\n");
-    debug("Window | SamplingFreq(kS/s): %0.3lf | NCycles: %1.0f | FreqResolution: %0.2lf\n", (float)fs/1000, (n*50/fs), df);
-    debug("Iterations | P: %d | Q: %d \n", P, Q);
-    debug("===============================================================================\n");
+    printf("\n== M-Class Parameters ========================================================\n");
+    printf("Signal Fundamental Component | Amp(V): %0.2lf | Ph(rad): %0.2lf | Freq(Hz): %0.2lf\n", amp, ph, freq);
+    printf("Interference | I-Mag(%%): %0.2lf | I-Freq(Hz): %0.2lf\n", ki*100, fi);
+    printf("------------------------------------------------------------------------------\n");
+    printf("Window | SamplingFreq(kS/s): %0.3lf | NCycles: %1.0f | FreqResolution: %0.2lf\n", (float)fs/1000, (n*50/fs), df);
+    printf("Iterations | P: %d | Q: %d \n", P, Q);
+    printf("===============================================================================\n");
 
 
     //Ipdft starts here////////////////////////////////////////////////////////////
@@ -63,7 +65,7 @@ int main() {
 
     dft_r(signal_window, dftbins, (unsigned int)n , n_bins);
 
-    print_bins(dftbins, n_bins, df, "Input Signal DFT BINS");
+    debug_bins(dftbins, n_bins, df, "Input Signal DFT BINS");
 
     double freq_f, amp_f, ph_f;
     double freq_i, amp_i, ph_i;
@@ -100,8 +102,10 @@ int main() {
     debug("\n[END iter-e-ipDFT] ##############################################\n\n");
     
     //Ipdft finishes here////////////////////////////////////////////////////////////
-
-    debug("freq: %.10lf, amp: %.10lf, ph: %.10lf\n", freq_f, 2*amp_f/norm_factor, ph_f);
+    
+    printf("\n---- [Results] ----------------------------------------------------------\n");
+    printf("|\tFREQ: %.10lf | AMP: %.10lf | PH: %.10lf \t|\n", freq_f, 2*amp_f/norm_factor, ph_f);
+    printf("-------------------------------------------------------------------------\n");
 
     return 0;
 }
@@ -139,7 +143,7 @@ int ipDFT(double complex* Xdft, int n_bins, double df, double* amp, double* ph, 
 
     debug("\n[ipDFT] ===============================================\n");
     
-    print_bins(Xdft, n_bins, df, "DFT BINS IN ipDFT");
+    debug_bins(Xdft, n_bins, df, "DFT BINS IN ipDFT");
 
     for(j = 0; j < n_bins; j++){        
         Xdft_mag[j] = cabs(Xdft[j]); 
@@ -201,7 +205,7 @@ void e_ipDFT(double complex* Xdft, int n_bins,int window_len, double df, int P, 
             X_pos[j] = Xdft[j] - X_neg; 
             X_pos_mag[j] = cabs(X_pos[j]);
         }
-        print_bins(X_pos, n_bins, df, "DFT BINS IN e_ipDFT");
+        debug_bins(X_pos, n_bins, df, "DFT BINS IN e_ipDFT");
         find_largest_three_indexes(X_pos_mag, n_bins, &k1, &k2, &k3);
         debug("[%s] k1: %d, k2: %d, k3: %d\n",__FUNCTION__, k1,k2,k3);
 
@@ -242,12 +246,10 @@ void pureTone(double complex* Xpure, int n_bins, double f, double ampl, double p
 
     
     debug("n_bins: %d | f: %0.3lf | ampl: %0.3lf | phse: %0.3lf | df: %0.3lf | N: %d | norm_factor: %0.3lf\n", n_bins, f, ampl, phse, df, N, norm_factor);
-    print_bins(Xpure, n_bins, df, "DFT BINS PURE TONE");
+    debug_bins(Xpure, n_bins, df, "DFT BINS PURE TONE");
     debug("[END pureTone] ================================================\n\n");
 
 }
-
-    
 
 void find_largest_three_indexes(double arr[], int size, int *k1, int *k2, int *k3) {
   int i;
@@ -280,7 +282,6 @@ void find_largest_three_indexes(double arr[], int size, int *k1, int *k2, int *k
 }
 
 void print_bins(complex *bins, int n_bins, double df, char* str){
-
 
     debug("\n--%s---------------  ---  --  -\n Indx", str);
     for(int i = 0; i < n_bins; i++){
