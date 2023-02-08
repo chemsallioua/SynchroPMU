@@ -15,7 +15,7 @@ or to activate
 
     #define DEBUG 1
 
-## __Running the code (tested on Windows)__
+## __Running the program (tested on Windows)__
 to compile and run the code simply run:
 
     gcc .\Mclass.c -o Mclass | ./Mclass.exe
