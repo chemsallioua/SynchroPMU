@@ -27,8 +27,8 @@ int main() {
     double dt = 1/fs;
     double df = fs/n;
     
-    int P = 1;
-    int Q = 1;
+    int P = 3;
+    int Q = 3;
     double signal_window[(int)n];
     double hann_window[(int)n];
 
@@ -181,7 +181,7 @@ void e_ipDFT(double complex* Xdft, int n_bins,int window_len, double df, int P, 
 
     for(p=0 ; p<P ; p++){ //e-ipdft iterations-------------------------------------
     
-        printf("\n[ITERATION: %d] ------------\n", p);
+        printf("\n[ITERATION: %d] ------------\n", p+1);
 
         for(j = 0; j < n_bins; j++){ 
             X_neg = wf(j,-Freq, Amp ,-Phse, df, window_len, norm_factor);           
