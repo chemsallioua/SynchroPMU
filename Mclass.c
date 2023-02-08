@@ -19,6 +19,8 @@ double complex D(double k, double N);
 double complex whDFT(double k, int N);
 int ipDFT(double complex* Xdft, int n_bins, double df, double* amp, double* ph, double* freq);
 void e_ipDFT(double complex* Xdft, int n_bins,int window_len, double df, int P, double norm_factor, double* amp, double* ph, double* freq);
+void iter_e_ipDFT(complex* dftbins, complex* Xi, complex* Xf,double* amp_f,double* ph_f,double* freq_f, int n_bins, int n, double df, int P, int Q, double norm_factor);
+
 void pureTone(double complex* Xpure, int n_bins, double f, double ampl, double phse, double df, int N,double norm_factor);
 void print_bins(complex *bins, int n_bins, double df, char* str);
 
@@ -69,10 +71,10 @@ int main() {
     debug_bins(dftbins, n_bins, df, "Input Signal DFT BINS");
 
     double freq_f, amp_f, ph_f;
-    double freq_i, amp_i, ph_i;
+    
     double complex Xf[n_bins];
     double complex Xi[n_bins];
-    double complex Xi_pure[n_bins];
+    
 
     
     e_ipDFT(dftbins, n_bins, n, df, P, norm_factor, &amp_f, &ph_f, &freq_f);
@@ -87,34 +89,7 @@ int main() {
     debug("Energy of Signal Spectrum = %lf | Energy of Difference= %lf\n",E, E_diff);
 
     if (E_diff > epsilon*E){
-    
-        debug("\n[iter-e-ipDFT] ###############################################\n");
-        for (i = 0; i < Q; i++)
-        {   
-            debug("\n[iter-e-ipDFT ITERATION: %d] ------------\n", i+1);
-
-
-            e_ipDFT(Xi, n_bins, n, df, P, norm_factor, &amp_i, &ph_i, &freq_i);
-            pureTone(Xi_pure, n_bins, freq_i, amp_i, ph_i, df, n , norm_factor);
-            for ( j = 0; j < n_bins; j++)
-            {
-                Xf[j] = dftbins[j] - Xi_pure[j];
-            }
-            e_ipDFT(Xf, n_bins, n, df, P, norm_factor, &amp_f, &ph_f, &freq_f);
-
-            if(i < Q-1){
-
-                pureTone(Xf, n_bins, freq_f, amp_f, ph_f, df, n , norm_factor);
-
-                for ( j = 0; j < n_bins; j++){
-                    Xi[j] = dftbins[j] - Xf[j];
-                }
-            }
-
-            debug("\nEND iter-e-ipDFT ITERATION --------------------------\n");
-        }
-        debug("\n[END iter-e-ipDFT] ##############################################\n\n");
-
+        iter_e_ipDFT(dftbins, Xi, Xf, &amp_f, &ph_f, &freq_f, n_bins, n, df, P, Q, norm_factor);
     }
     //Ipdft finishes here////////////////////////////////////////////////////////////
     
@@ -311,4 +286,46 @@ void print_bins(complex *bins, int n_bins, double df, char* str){
         debug("|%6.1f", cabs(bins[i]));
     }
     debug("|\n---------------------------  ---  --  -\n\n");
+}
+
+void iter_e_ipDFT(complex* dftbins, complex* Xi, complex* Xf,double* amp_f,double* ph_f,double* freq_f, int n_bins, int n, double df, int P, int Q, double norm_factor){
+            
+        double Amp  =  *amp_f;
+        double Phse =  *ph_f;
+        double Freq =  *freq_f;
+
+        double freq_i, amp_i, ph_i;
+        double complex Xi_pure[n_bins];
+    
+        debug("\n[iter-e-ipDFT] ###############################################\n");
+        int i,j;
+        for (i = 0; i < Q; i++)
+        {   
+            debug("\n[iter-e-ipDFT ITERATION: %d] ------------\n", i+1);
+
+
+            e_ipDFT(Xi, n_bins, n, df, P, norm_factor, &amp_i, &ph_i, &freq_i);
+            pureTone(Xi_pure, n_bins, freq_i, amp_i, ph_i, df, n , norm_factor);
+            for ( j = 0; j < n_bins; j++)
+            {
+                Xf[j] = dftbins[j] - Xi_pure[j];
+            }
+            e_ipDFT(Xf, n_bins, n, df, P, norm_factor, &Amp, &Phse, &Freq);
+
+            if(i < Q-1){
+
+                pureTone(Xf, n_bins, Freq, Amp, Phse, df, n , norm_factor);
+
+                for ( j = 0; j < n_bins; j++){
+                    Xi[j] = dftbins[j] - Xf[j];
+                }
+            }
+
+            debug("\nEND iter-e-ipDFT ITERATION --------------------------\n");
+        }
+        debug("\n[END iter-e-ipDFT] ##############################################\n\n");
+
+        *amp_f = Amp;
+        *ph_f = Phse;
+        *freq_f = Freq;
 }
