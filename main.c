@@ -11,7 +11,7 @@ int main() {
     double ph=1;
     double freq= 50;
 
-    double ki = 0;
+    double ki = 0.1;
     double fi = 25;
     double n =2048 ;
     double fs = 25600;
