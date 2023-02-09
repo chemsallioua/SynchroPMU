@@ -2,7 +2,7 @@
 #include <complex.h>
 #include <math.h>
 
-#define DEBUG 1
+#define DEBUG 0
 
 #if DEBUG
 #define debug(...) printf(__VA_ARGS__)
@@ -36,8 +36,8 @@ int main() {
     double dt = 1/fs;
     double df = fs/n;
     
-    int P = 1;
-    int Q = 0;
+    int P = 3;
+    int Q = 3;
     double signal_window[(int)n];
     double hann_window[(int)n];
 
@@ -213,9 +213,18 @@ void e_ipDFT(double complex* Xdft, int n_bins,int window_len, double df, int P, 
 
         double delta_corr = 2*(X_pos_mag[k3]-X_pos_mag[k2])/(X_pos_mag[k2]+X_pos_mag[k3]+2*X_pos_mag[k1]);
         debug("[%s] delta_corr: %lf\n",__FUNCTION__,delta_corr);
+        Freq = (k1+delta_corr)*df;
+
+        if(fabs(delta_corr) <= pow(10,-12)){
+        Amp = X_pos_mag[k1];  
+        Phse = carg(X_pos[k1]);
+        }
+        else{
+        //estimated quantities
         Amp = X_pos_mag[k1]*fabs((delta_corr*delta_corr-1)*(M_PI*delta_corr)/sin(M_PI*delta_corr)); 
         Phse = carg(X_pos[k1])-M_PI*delta_corr;
-        Freq = (k1+delta_corr)*df;
+        }
+
         debug("[%s] freq: %.10lf, amp (not normalized): %.3lf, ph: %.3lf\n",__FUNCTION__, Freq, Amp, Phse);
         debug("\nEND e_ipDFT ITERATION --------------------------\n");
         
@@ -263,7 +272,7 @@ void find3LargestIndx(double arr[], int size, int *km, int *kl, int *kr) {
       max_indx = i;
     }
   }
-
+  
   *km = max_indx;
   *kl = max_indx-1;
   *kr = max_indx+1;
