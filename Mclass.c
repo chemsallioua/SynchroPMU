@@ -2,7 +2,7 @@
 #include <complex.h>
 #include <math.h>
 
-#define DEBUG 0
+#define DEBUG 1
 
 #if DEBUG
 #define debug(...) printf(__VA_ARGS__)
@@ -21,15 +21,14 @@ int ipDFT(double complex* Xdft, int n_bins, double df, double* amp, double* ph, 
 void e_ipDFT(double complex* Xdft, int n_bins,int window_len, double df, int P, double norm_factor, double* amp, double* ph, double* freq);
 void pureTone(double complex* Xpure, int n_bins, double f, double ampl, double phse, double df, int N,double norm_factor);
 void print_bins(complex *bins, int n_bins, double df, char* str);
-
-void find_largest_three_indexes(double arr[], int size, int *k1, int *k2, int *k3);
+void find3LargestIndx(double arr[], int size, int *km, int *kl, int *kr);
 
 int main() {
 
     double amp=2;
     double ph=1;
-    double freq= 50;
-    double ki = 0.1;
+    double freq= 55;
+    double ki = 0;
     double fi = 25;
     double n =2048 ;
     double fs = 25600;
@@ -37,8 +36,8 @@ int main() {
     double dt = 1/fs;
     double df = fs/n;
     
-    int P = 3;
-    int Q = 3;
+    int P = 1;
+    int Q = 0;
     double signal_window[(int)n];
     double hann_window[(int)n];
 
@@ -149,19 +148,21 @@ int ipDFT(double complex* Xdft, int n_bins, double df, double* amp, double* ph, 
         Xdft_mag[j] = cabs(Xdft[j]); 
     }
 
-    find_largest_three_indexes(Xdft_mag, n_bins, &k1, &k2, &k3);
+ 
+    find3LargestIndx(Xdft_mag, n_bins, &k1, &k2, &k3);
 
     debug("[%s] k1: %d, k2: %d, k3: %d\n",__FUNCTION__, k1,k2,k3);
 
     double delta_corr = 2*(Xdft_mag[k3]-Xdft_mag[k2])/(Xdft_mag[k2]+Xdft_mag[k3]+2*Xdft_mag[k1]);
 
     debug("[%s] delta_corr: %lf\n",__FUNCTION__,delta_corr);
+    *freq = (k1+delta_corr)*df;
 
     if(fabs(delta_corr) <= pow(10,-12)){
 
         *amp =  Xdft_mag[k1];  
         *ph = carg(Xdft[k1]);
-        *freq = k1*df;
+        
 
         debug("[%s] freq: %.10lf, amp (not normalized): %.3lf, ph: %.3lf\n",__FUNCTION__, *freq, *amp, *ph);
         debug("\n[END ipDFT] ===============================================\n\n");
@@ -172,7 +173,7 @@ int ipDFT(double complex* Xdft, int n_bins, double df, double* amp, double* ph, 
         //ipdft estimated quantities
         *amp = Xdft_mag[k1]*fabs((delta_corr*delta_corr-1)*(M_PI*delta_corr)/sin(M_PI*delta_corr)); 
         *ph = carg(Xdft[k1])-M_PI*delta_corr;
-        *freq = (k1+delta_corr)*df;
+        
 
         debug("[%s] freq: %.10lf, amp (not normalized): %.3lf, ph: %.3lf\n",__FUNCTION__, *freq, *amp, *ph);
         debug("\n[END ipDFT] ===============================================\n\n");
@@ -206,7 +207,8 @@ void e_ipDFT(double complex* Xdft, int n_bins,int window_len, double df, int P, 
             X_pos_mag[j] = cabs(X_pos[j]);
         }
         debug_bins(X_pos, n_bins, df, "DFT BINS IN e_ipDFT");
-        find_largest_three_indexes(X_pos_mag, n_bins, &k1, &k2, &k3);
+
+        find3LargestIndx(X_pos_mag, n_bins, &k1, &k2, &k3);
         debug("[%s] k1: %d, k2: %d, k3: %d\n",__FUNCTION__, k1,k2,k3);
 
         double delta_corr = 2*(X_pos_mag[k3]-X_pos_mag[k2])/(X_pos_mag[k2]+X_pos_mag[k3]+2*X_pos_mag[k1]);
@@ -251,34 +253,20 @@ void pureTone(double complex* Xpure, int n_bins, double f, double ampl, double p
 
 }
 
-void find_largest_three_indexes(double arr[], int size, int *k1, int *k2, int *k3) {
-  int i;
-  float first, second, third;
-  int first_index, second_index, third_index;
-  first = second = third = -2147483647.0f;
+void find3LargestIndx(double arr[], int size, int *km, int *kl, int *kr) {
+  int max_val = -2147483647.0f;
+  int max_indx = -1;
   
-  for (i = 0; i < size; i++) {
-    if (arr[i] > first) {
-      third = second;
-      second = first;
-      first = arr[i];
-      third_index = second_index;
-      second_index = first_index;
-      first_index = i;
-    } else if (arr[i] > second) {
-      third = second;
-      second = arr[i];
-      third_index = second_index;
-      second_index = i;
-    } else if (arr[i] > third) {
-      third = arr[i];
-      third_index = i;
+  for (int i = 0; i < size; i++) {
+    if (arr[i] > max_val) {
+      max_val = arr[i];
+      max_indx = i;
     }
   }
-  
-  *k1 = first_index;
-  *k2 = second_index;
-  *k3 = third_index;
+
+  *km = max_indx;
+  *kl = max_indx-1;
+  *kr = max_indx+1;
 }
 
 void print_bins(complex *bins, int n_bins, double df, char* str){
