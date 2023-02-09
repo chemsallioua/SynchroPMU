@@ -17,4 +17,5 @@ or to activate
 ## __Running the program (tested on Windows)__
 to compile and run the code simply run:
 
-    gcc main.c iter_e_ipdft_imp.c -o main.exe | ./main.exe
+    gcc main.c iter_e_ipdft_imp.c -o main.exe
+    ./main.exe
