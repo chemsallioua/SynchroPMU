@@ -42,14 +42,8 @@ typedef struct{
     double freq;
 }synchrophasor;
 
-inline float wrap_angle(float rad_angle){
-	float temp = fmod(rad_angle + M_PI, 2*M_PI);
-	if(temp < 0.0){
-        temp += 2.0*M_PI;
-		}
-
-	return temp - M_PI;
-}
+//angle [-pi; pi] wrap in radiants
+double wrap_angle(double rad_angle);
 
 //pmu estimator initialization
 int pmu_init(void* cfg);
