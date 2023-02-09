@@ -102,8 +102,6 @@ int pmu_init(void* cfg){
             return -1;}
     }
     
-
-    
     g_norm_factor = hann(g_hann_window, g_win_len);
 
     g_pmu_initialized = 1;

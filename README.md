@@ -1,6 +1,6 @@
 # __m-class-pmu__
 A C implementtation of the M-Class Iterative Interpolated DFT Synchrophasor Estimattion Algorithm
-# Version 1.1.0
+# Version 1.1.1
 Updates:
 - Cleaned many aspects of the code
 - Integrated all the functions of the Iterative Enhanced Interpolated DFT into an implementation file __iter_e_ipdft_imp.c__ and its header file __iter_e_ipdft_imp.h__ 
