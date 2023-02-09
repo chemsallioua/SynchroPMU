@@ -27,6 +27,7 @@
 #endif
 
 typedef struct {
+    unsigned int n_chanls;
     unsigned int win_len;
     double fs;
     unsigned int n_bins;
@@ -54,7 +55,7 @@ inline float wrap_angle(float rad_angle){
 int pmu_init(void* cfg);
 
 //synchrophasor estimation
-int pmu_estimate(double * signal_window, synchrophasor* out_phasor);
+int pmu_estimate(double* in_signal_windows[], synchrophasor* out_phasor);
 
 //pmu estimator deinitialization
 int pmu_deinit();

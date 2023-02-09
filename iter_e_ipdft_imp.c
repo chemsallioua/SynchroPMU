@@ -16,6 +16,7 @@
 /*GLOBAL VARIABLES DECLARIATION==================*/
 
 // Synchrophasor Estimation Parameters
+static unsigned int g_n_channls;        // nuumber of input channels
 static unsigned int g_win_len;          // number of samples in observation window
 static double g_fs;                     // sample rate in Sample/s
 static unsigned int g_n_bins;           // number of bins to define estimation freq band
@@ -31,6 +32,7 @@ static double complex* g_Xf;            // Fundamental frequency spectrum bins a
 static double complex* g_Xi;            // Interference frequency spectrum bins arry ptr
 static double complex* g_dftbins;       // DFT bins array ptr
 static double* g_hann_window;           // hann coefficients array ptr
+static double** g_signal_windows;        // input signal windows pointer
 
 // Pmu estimator inizialization flag
 static _Bool g_pmu_initialized = 0;
@@ -74,6 +76,7 @@ int pmu_init(void* cfg){
     g_Q = config->Q;
     g_interf_trig = config->interf_trig;
     g_df = g_fs/(double)g_win_len;
+    g_n_channls = config->n_chanls;
 
     if (NULL == (g_Xf = malloc(g_n_bins*sizeof(double complex))  )){
 		printf("[%s] ERROR: g_Xf memory allocation failed\n",__FUNCTION__);
@@ -85,8 +88,19 @@ int pmu_init(void* cfg){
 		printf("[%s] ERROR: g_Xi memory allocation failed\n",__FUNCTION__);
 		return -1;}
     if (NULL == (g_hann_window = malloc(g_win_len*sizeof(double))  )){
-		printf("[%s] ERROR: hann_window memory allocation failed\n",__FUNCTION__);
+		printf("[%s] ERROR: g_hann_window memory allocation failed\n",__FUNCTION__);
 		return -1;}
+
+    if (NULL == (g_signal_windows = (double **)malloc(g_n_channls * sizeof(double *))) ){
+		printf("[%s] ERROR: g_signal_windows memory allocation failed\n",__FUNCTION__);
+		return -1;}
+
+    int i;
+    for (i = 0; i < g_n_channls; i++){
+        if (NULL == (g_signal_windows[i] = (double *)malloc(g_win_len * sizeof(double)) )){
+            printf("[%s] ERROR: g_signal_windows memory allocation failed\n",__FUNCTION__);
+            return -1;}
+    }
     
     g_norm_factor = hann(g_hann_window, g_win_len);
 
@@ -98,41 +112,50 @@ int pmu_init(void* cfg){
 }
 
 //pmu estimation function implementation
-int pmu_estimate(double * signal_window, synchrophasor* out_phasor){
+int pmu_estimate(double* in_signal_windows[], synchrophasor* out_phasor){
+
+    debug("[%s] pmu_estimate() started\n", __FUNCTION__);
 
     if(!g_pmu_initialized){
         printf("[%s] ERROR: pmu estimator not initialized, first initialize with pmu_init function\n",__FUNCTION__);
         return -1;
     }
 
-    int i,j;
-    for(i=0; i<g_win_len; i++){
-        signal_window[i]= signal_window[i]*g_hann_window[i];
+    int i,j, chnl;
+    for (chnl = 0; chnl < g_n_channls; chnl++) {
+        for(i=0; i<g_win_len; i++){
+            g_signal_windows[chnl][i] = in_signal_windows[chnl][i]*g_hann_window[i];
+        }
     }
 
-    double E = dft_r(signal_window, g_dftbins, g_win_len , g_n_bins);
+    debug("[%s] windowing on all channels done successfully\n", __FUNCTION__);
 
-    debug_bins(g_dftbins, g_n_bins, g_df, "Input Signal DFT BINS");
-    
-    e_ipDFT(g_dftbins, &g_phasor);
-    pureTone(g_Xf, g_phasor);
+    for (chnl = 0; chnl < g_n_channls; chnl++){
 
-    double E_diff = 0;
-    
-    for ( j = 0; j < g_n_bins; j++){
-        g_Xi[j] = g_dftbins[j] - g_Xf[j];
-        E_diff += cabs(g_Xi[j]*g_Xi[j]); 
+        double E = dft_r(g_signal_windows[chnl], g_dftbins, g_win_len , g_n_bins);
+
+        debug_bins(g_dftbins, g_n_bins, g_df, "Input Signal DFT BINS");
+        
+        e_ipDFT(g_dftbins, &g_phasor);
+        pureTone(g_Xf, g_phasor);
+
+        double E_diff = 0;
+        
+        for ( j = 0; j < g_n_bins; j++){
+            g_Xi[j] = g_dftbins[j] - g_Xf[j];
+            E_diff += cabs(g_Xi[j]*g_Xi[j]); 
+        }
+
+        debug("Energy of Signal Spectrum = %lf | Energy of Difference= %lf\n",E, E_diff);
+
+        if (E_diff > g_interf_trig*E){
+            iter_e_ipDFT(g_dftbins, g_Xi, g_Xf, &g_phasor);
+        }
+
+        out_phasor[chnl].freq = g_phasor.freq;
+        out_phasor[chnl].amp = 2*g_phasor.amp/g_norm_factor;
+        out_phasor[chnl].ph = g_phasor.ph;
     }
-
-    debug("Energy of Signal Spectrum = %lf | Energy of Difference= %lf\n",E, E_diff);
-
-    if (E_diff > g_interf_trig*E){
-        iter_e_ipDFT(g_dftbins, g_Xi, g_Xf, &g_phasor);
-    }
-
-    out_phasor->freq = g_phasor.freq;
-    out_phasor->amp = 2*g_phasor.amp/g_norm_factor;
-    out_phasor->ph = g_phasor.ph;
 
     return 0;
 
@@ -152,6 +175,13 @@ int pmu_deinit(){
 	free(g_Xi);
 	free(g_dftbins);
     free(g_hann_window);
+    free(g_signal_windows);
+
+    int i;
+    for (i = 0; i < g_n_channls; i++){
+        free(g_signal_windows[i]);
+    }
+    free(g_signal_windows);
 
     debug("[%s] Pmu estimator deinitialized successfully\n",__FUNCTION__);
 
@@ -234,7 +264,6 @@ static int ipDFT(double complex* Xdft, synchrophasor* phasor){
         return 1; 
     }
     else{
-        //ipdft estimated quantities
         phasor->amp = Xdft_mag[k1]*fabs((delta_corr*delta_corr-1)*(M_PI*delta_corr)/sin(M_PI*delta_corr)); 
         phasor->ph = carg(Xdft[k1])-M_PI*delta_corr;
     
@@ -252,20 +281,18 @@ static void e_ipDFT(double complex* Xdft, synchrophasor* phasor){
     synchrophasor phsr = *phasor;  
     
     if(!ipDFT(Xdft, &phsr)){        
-        //computing the magnitude of the DFT and extracting the largest magnitude and its relative index
         int i,j, p;
      
         double complex X_neg;
         double complex X_pos[g_n_bins];
 
-        for(p=0 ; p<g_P ; p++){ //e-ipdft iterations-------------------------------------
+        for(p=0 ; p<g_P ; p++){ 
         
             debug("\n[e_ipDFT ITERATION: %d] ------------\n", p+1);
 
             for(j = 0; j < g_n_bins; j++){ 
                 X_neg = wf(j,-phsr.freq, phsr.amp ,-phsr.ph, g_df, g_win_len, g_norm_factor);           
                 X_pos[j] = Xdft[j] - X_neg; 
-                //X_pos_mag[j] = cabs(X_pos[j]);
             }
 
             if(ipDFT(X_pos, &phsr)){
