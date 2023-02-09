@@ -53,7 +53,7 @@ static void iter_e_ipDFT(complex* dftbins, complex* Xi, complex* Xf, synchrophas
 inline static double complex whDFT(double k, int N); 
 inline static double complex D(double k, double N);
 inline static double complex wf(int k, double f, double ampl, double phse, double df, int N,double norm_factor);
-inline static void find_largest_three_indexes(double arr[], int size, int *k1, int *k2, int *k3);
+inline static void find3LargestIndx(double arr[], int size, int *km, int *kl, int *kr);
 
 // prints the bins and their index and frequency
 static void print_bins(complex *bins, int n_bins, double df, char* str); 
@@ -195,7 +195,6 @@ static void pureTone(double complex* Xpure, synchrophasor phasor){
       Xpure[i] = wf(i, phasor.freq, phasor.amp, phasor.ph, g_df, g_win_len, g_norm_factor) + wf(i, -phasor.freq, phasor.amp, -phasor.ph, g_df, g_win_len, g_norm_factor);
     } 
 
-    
     debug("freq: %0.3lf | ampl: %0.3lf | phse: %0.3lf\n", phasor.freq, phasor.amp, phasor.ph);
     debug_bins(Xpure, g_n_bins, g_df, "DFT BINS PURE TONE");
     debug("[END pureTone] ================================================\n\n");
@@ -215,19 +214,19 @@ static int ipDFT(double complex* Xdft, synchrophasor* phasor){
         Xdft_mag[j] = cabs(Xdft[j]); 
     }
 
-    find_largest_three_indexes(Xdft_mag, g_n_bins, &k1, &k2, &k3);
+    find3LargestIndx(Xdft_mag, g_n_bins, &k1, &k2, &k3);
 
     debug("[%s] k1: %d, k2: %d, k3: %d\n",__FUNCTION__, k1,k2,k3);
 
     double delta_corr = 2*(Xdft_mag[k3]-Xdft_mag[k2])/(Xdft_mag[k2]+Xdft_mag[k3]+2*Xdft_mag[k1]);
 
     debug("[%s] delta_corr: %lf\n",__FUNCTION__,delta_corr);
+    phasor->freq = (k1+delta_corr)*g_df;
 
     if(fabs(delta_corr) <= pow(10,-12)){
 
         phasor->amp =  Xdft_mag[k1];  
         phasor->ph = carg(Xdft[k1]);
-        phasor->freq = k1*g_df;
 
         debug("[%s] freq: %.10lf, amp (not normalized): %.3lf, ph: %.3lf\n",__FUNCTION__, phasor->freq, phasor->amp, phasor->ph);
         debug("\n[END ipDFT] ===============================================\n\n");
@@ -238,8 +237,7 @@ static int ipDFT(double complex* Xdft, synchrophasor* phasor){
         //ipdft estimated quantities
         phasor->amp = Xdft_mag[k1]*fabs((delta_corr*delta_corr-1)*(M_PI*delta_corr)/sin(M_PI*delta_corr)); 
         phasor->ph = carg(Xdft[k1])-M_PI*delta_corr;
-        phasor->freq = (k1+delta_corr)*g_df;
-
+    
         debug("[%s] freq: %.10lf, amp (not normalized): %.3lf, ph: %.3lf\n",__FUNCTION__, phasor->freq, phasor->amp, phasor->ph);
         debug("\n[END ipDFT] ===============================================\n\n");
 
@@ -331,34 +329,21 @@ inline static double complex wf(int k, double f, double ampl, double phse, doubl
     return ampl*cexp(I*phse)*whDFT(k-(f/df), N)/norm_factor;
 }
 
-inline static void find_largest_three_indexes(double arr[], int size, int *k1, int *k2, int *k3) {
-  int i;
-  float first, second, third;
-  int first_index, second_index, third_index;
-  first = second = third = -2147483647.0f;
+inline static void find3LargestIndx(double arr[], int size, int *km, int *kl, int *kr){
+
+  int max_val = -2147483647.0f;
+  int max_indx = -1;
   
-  for (i = 0; i < size; i++) {
-    if (arr[i] > first) {
-      third = second;
-      second = first;
-      first = arr[i];
-      third_index = second_index;
-      second_index = first_index;
-      first_index = i;
-    } else if (arr[i] > second) {
-      third = second;
-      second = arr[i];
-      third_index = second_index;
-      second_index = i;
-    } else if (arr[i] > third) {
-      third = arr[i];
-      third_index = i;
+  for (int i = 0; i < size; i++) {
+    if (arr[i] > max_val) {
+      max_val = arr[i];
+      max_indx = i;
     }
   }
   
-  *k1 = first_index;
-  *k2 = second_index;
-  *k3 = third_index;
+  *km = max_indx;
+  *kl = max_indx-1;
+  *kr = max_indx+1;
 }
 
 static void print_bins(complex *bins, int n_bins, double df, char* str){
