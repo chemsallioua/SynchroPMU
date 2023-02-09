@@ -1,3 +1,13 @@
+/*==============================================================================
+  @file iter_e_ipdft_imp.h
+
+  Pmu estimator header file. 
+
+  Copyright (c) 2023.
+  All Rights Reserved.
+  Confidential and Proprietary - University of Bologna.
+
+==============================================================================*/ 
 
 #ifndef ITER_E_IPDFT_IMP_H
 #define ITER_E_IPDFT_IMP_H
