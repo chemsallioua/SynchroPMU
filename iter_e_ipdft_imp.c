@@ -84,10 +84,17 @@ double wrap_angle(double rad_angle){
 //pmu initialization function implementation
 int pmu_init(void* cfg){
 
+    // check if the pmu estimator is already initialized
+    if(g_pmu_initialized){
+        printf("[%s] ERROR: pmu estimator already initialized\n",__FUNCTION__);
+        return -1;
+    }
+
     debug("[%s] Initializing pmu estimator\n",__FUNCTION__);
 
     estimator_config* config = (estimator_config*)cfg;
-
+    
+    // pmu estimator parameters initialization from input config
     g_win_len = config->win_len;
     g_fs = config->fs;
     g_f0 = config->f0;
@@ -107,6 +114,7 @@ int pmu_init(void* cfg){
     g_low_pass_coeff[1] = config->rocof_low_pass_coeffs[1];
     g_low_pass_coeff[2] = config->rocof_low_pass_coeffs[2];
 
+    // allocate memory for the global arrays
     if (NULL == (g_Xf = malloc(g_n_bins*sizeof(double complex))  )){
 		printf("[%s] ERROR: g_Xf memory allocation failed\n",__FUNCTION__);
 		return -1;}
@@ -143,6 +151,7 @@ int pmu_init(void* cfg){
         printf("[%s] ERROR: g_state memory allocation failed\n",__FUNCTION__);
         return -1;}
 
+    // initialize the global arrays
     for(i = 0; i < g_n_channls; i++){
         g_delay_line[0][i] = 0.0;
         g_delay_line[1][i] = 0.0;
@@ -150,8 +159,10 @@ int pmu_init(void* cfg){
         g_state[i] = 0;
     }
     
+    // initialize the hann coefficients
     g_norm_factor = hann(g_hann_window, g_win_len);
 
+    // pmu estimator is initialized successfully
     g_pmu_initialized = 1;
 
     debug("[%s] Pmu estimator initialized successfully\n",__FUNCTION__);
@@ -164,11 +175,13 @@ int pmu_estimate(double* in_signal_windows[], pmu_frame* out_frame){
 
     debug("[%s] pmu_estimate() started\n", __FUNCTION__);
 
+    // check if pmu estimator is initialized
     if(!g_pmu_initialized){
         printf("[%s] ERROR: pmu estimator not initialized, first initialize with pmu_init function\n",__FUNCTION__);
         return -1;
     }
 
+    // input signal windowing
     int i,j, chnl;
     for (chnl = 0; chnl < g_n_channls; chnl++) {
         for(i=0; i<g_win_len; i++){
@@ -178,18 +191,22 @@ int pmu_estimate(double* in_signal_windows[], pmu_frame* out_frame){
 
     debug("[%s] windowing on all channels done successfully\n", __FUNCTION__);
 
+    // synchrophasor estimation for each channel 
     for (chnl = 0; chnl < g_n_channls; chnl++){
 
+        // compuute DFT of input signal
         dft_r(g_signal_windows[chnl], g_dftbins, g_win_len , g_n_bins);
 
         debug_bins(g_dftbins, g_n_bins, g_df, "Input Signal DFT BINS");
         
+        // perform enhanced interpolated DFT
         e_ipDFT(g_dftbins, &g_phasor);
         pureTone(g_Xf, g_phasor);
 
         double E_diff = 0;
         double E = 0;
 
+        // compute energy of both input signal and interference frequencies 
         for ( j = 0; j < g_n_bins; j++){
 
             g_Xi[j] = g_dftbins[j] - g_Xf[j];
@@ -200,29 +217,34 @@ int pmu_estimate(double* in_signal_windows[], pmu_frame* out_frame){
 
         debug("Energy of Signal Spectrum = %lf | Energy of Difference= %lf\n",E, E_diff);
 
+        // check if interference is present to trigger iterative enhanced interpolated DFT
         if (E_diff > g_interf_trig*E){
             iter_e_ipDFT(g_dftbins, g_Xi, g_Xf, &g_phasor);
         }
 
-        //Two state ROCOF Estimation
+        // two state rocof estimation
         double rocof = (g_phasor.freq - g_freq_old[chnl])*(float)g_frame_rate;
         double rocof_der = (rocof - g_delay_line[0][chnl])*(float)g_frame_rate;
 
+        // update state
         g_state[chnl] = (!g_state[chnl] && ( fabs(rocof) > g_thresholds[0] || fabs(rocof_der) > g_thresholds[1] )) ? 1 : g_state[chnl];
         g_state[chnl] = (g_state[chnl] && fabs(rocof) < g_thresholds[2]) ? 0 : g_state[chnl];
-
+        
+        // apply low pass filter if state is 0
         if(!g_state[chnl]){
                 out_frame[chnl].rocof = g_low_pass_coeff[1]*rocof + 
                                             g_low_pass_coeff[2]*g_delay_line[0][chnl] - 
                                                 g_low_pass_coeff[0]*g_delay_line[1][chnl];
         }else {out_frame[chnl].rocof = rocof;}
 
+        // update old frequency
         g_freq_old[chnl] = g_phasor.freq;
 
         //update delay line
         g_delay_line[0][chnl] = rocof;    //x(n-1)
         g_delay_line[1][chnl] = out_frame[chnl].rocof; //y(n-1)
 
+        // populate output frame
         out_frame[chnl].synchrophasor.freq = g_phasor.freq;
         out_frame[chnl].synchrophasor.amp = 2*g_phasor.amp/g_norm_factor;
         out_frame[chnl].synchrophasor.ph = g_phasor.ph;
@@ -238,11 +260,13 @@ int pmu_deinit(){
 
     debug("[%s] Deinitializing pmu estimator\n",__FUNCTION__);
 
+    // check if pmu estimator is initialized
     if(!g_pmu_initialized){
         printf("[%s] ERROR: pmu estimator not initialized, first initialize with pmu_init function\n",__FUNCTION__);
         return -1;
     }
 
+    // free all allocated memory
 	free(g_Xf);
 	free(g_Xi);
 	free(g_dftbins);
@@ -260,7 +284,8 @@ int pmu_deinit(){
     free(g_signal_windows);
 
     debug("[%s] Pmu estimator deinitialized successfully\n",__FUNCTION__);
-
+    
+    // set pmu estimator to uninitialized state
     g_pmu_initialized = 0;
     return 0;
 }
@@ -268,8 +293,7 @@ int pmu_deinit(){
 static int dft_r(double* in_ptr, double complex* out_ptr , unsigned int out_len, unsigned int n_bins){
     // debug("dft------------------------\n");
     int k,n;
-    double E = 0;
-    double temp_abs;
+
     for (k = 0 ; k < n_bins ; ++k)
     {
         out_ptr[k] = 0;
