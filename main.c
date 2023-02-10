@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include "iter_e_ipdft_imp.h"
 
-#define NUM_CHANNNELS 3
+#define NUM_CHANNNELS 7
 
 int main() {
 
@@ -31,28 +31,19 @@ int main() {
     double ph[NUM_CHANNNELS];
     double freq[NUM_CHANNNELS]; 
     synchrophasor* estimated_phasors = (synchrophasor *)malloc(NUM_CHANNNELS * sizeof(synchrophasor));
-    double** signal_windows;
-    signal_windows = (double **)malloc(NUM_CHANNNELS * sizeof(double *));
+    double** signal_windows = (double **)malloc(NUM_CHANNNELS * sizeof(double *));
     for (i = 0; i < NUM_CHANNNELS; i++){
         signal_windows[i] = (double *)malloc(n * sizeof(double));
     }
     //initializing windows
     for (j=0; j<NUM_CHANNNELS; j++){
         amp[j] = AMP;
-        ph[j] = PH + j*M_2_PI/3;
+        ph[j] = PH + j*2*M_PI/3;
         freq[j] = FREQ;
         for(i=0; i<n; i++){
             signal_windows[j][i] = (amp[j]*cos(2*M_PI*freq[j]*dt*i + ph[j]) + amp[j]*ki*cos(2*M_PI*fi*dt*i + ph[j]));
         }
     }
-
-    pmu_config.win_len = n;
-    pmu_config.fs = fs;
-    pmu_config.n_bins = n_bins;
-    pmu_config.P = P;
-    pmu_config.Q = Q;
-    pmu_config.interf_trig = epsilon;
-    pmu_config.n_chanls = NUM_CHANNNELS;
 
     printf("\n== M-Class Parameters ========================================================\n");
     printf("Signal Fundamental Component | Amp(V): %0.2lf | Ph(rad): %0.2lf | Freq(Hz): %0.2lf\n", amp, ph, freq);
@@ -62,15 +53,23 @@ int main() {
     printf("Iterations | P: %d | Q: %d \n", P, Q);
     printf("===============================================================================\n");
 
+    pmu_config.win_len = n;
+    pmu_config.fs = fs;
+    pmu_config.n_bins = n_bins;
+    pmu_config.P = P;
+    pmu_config.Q = Q;
+    pmu_config.interf_trig = epsilon;
+    pmu_config.n_chanls = NUM_CHANNNELS;
+
     pmu_init(&pmu_config);
 
     pmu_estimate(signal_windows, estimated_phasors);
 
-    printf("\n---- [Results] ------------------------------------------------------------------\n");
+    printf("\n---- [Results] --------------------------------------------------------------------------------------\n");
     for(j=0; j<NUM_CHANNNELS; j++){
-        printf("| CHANNEL: %d |\tFREQ: %.10lf (Hertz) | AMP: %.10lf (Volt) | PH: %.10lf (deg) \t|\n",j, estimated_phasors[j].freq, estimated_phasors[j].amp, estimated_phasors[j].ph*(180/M_1_PI));
+        printf("| CHANNEL: %d |\tFREQ: %.10lf (Hertz) | AMP: %.10lf (Volt) | PH: %.10lf (deg)\n",j, estimated_phasors[j].freq, estimated_phasors[j].amp, estimated_phasors[j].ph*(180/M_PI));
     }
-    printf("---------------------------------------------------------------------------------\n");
+    printf("-----------------------------------------------------------------------------------------------------\n");
 
     pmu_deinit();
 
@@ -78,6 +77,7 @@ int main() {
         free(signal_windows[i]);
     }
     free(signal_windows);
+    free(estimated_phasors);
 
     return 0;
 }

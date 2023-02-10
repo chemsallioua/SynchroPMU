@@ -40,7 +40,7 @@ static _Bool g_pmu_initialized = 0;
 /*STATIC FUNCTIONS PROTOTYPES====================*/
 
 // performs the DFT of a real sampled signal
-static double dft_r(double* in_ptr, double complex* out_ptr , unsigned int out_len, unsigned int n_bins);
+static int dft_r(double* in_ptr, double complex* out_ptr , unsigned int out_len, unsigned int n_bins);
 
 // helps inizializing the hann coefficients
 static double hann(double* out_ptr, unsigned int out_len);
@@ -61,6 +61,14 @@ inline static void find3LargestIndx(double arr[], int size, int *km, int *kl, in
 static void print_bins(complex *bins, int n_bins, double df, char* str); 
 
 /*FUNCTIONS IMPLEMENTATION====================*/
+double wrap_angle(double rad_angle){
+	float temp = fmod(rad_angle + M_PI, 2*M_PI);
+	if(temp < 0.0){
+        temp += 2.0*M_PI;
+		}
+
+	return temp - M_PI;
+}
 
 //pmu initialization function implementation
 int pmu_init(void* cfg){
@@ -132,7 +140,7 @@ int pmu_estimate(double* in_signal_windows[], synchrophasor* out_phasor){
 
     for (chnl = 0; chnl < g_n_channls; chnl++){
 
-        double E = dft_r(g_signal_windows[chnl], g_dftbins, g_win_len , g_n_bins);
+        dft_r(g_signal_windows[chnl], g_dftbins, g_win_len , g_n_bins);
 
         debug_bins(g_dftbins, g_n_bins, g_df, "Input Signal DFT BINS");
         
@@ -140,10 +148,14 @@ int pmu_estimate(double* in_signal_windows[], synchrophasor* out_phasor){
         pureTone(g_Xf, g_phasor);
 
         double E_diff = 0;
-        
+        double E = 0;
+
         for ( j = 0; j < g_n_bins; j++){
+
             g_Xi[j] = g_dftbins[j] - g_Xf[j];
-            E_diff += cabs(g_Xi[j]*g_Xi[j]); 
+
+            E_diff += cabs(g_Xi[j]*g_Xi[j]);
+            E += cabs(g_dftbins[j]*g_dftbins[j]); 
         }
 
         debug("Energy of Signal Spectrum = %lf | Energy of Difference= %lf\n",E, E_diff);
@@ -155,6 +167,7 @@ int pmu_estimate(double* in_signal_windows[], synchrophasor* out_phasor){
         out_phasor[chnl].freq = g_phasor.freq;
         out_phasor[chnl].amp = 2*g_phasor.amp/g_norm_factor;
         out_phasor[chnl].ph = g_phasor.ph;
+        
     }
 
     return 0;
@@ -189,7 +202,7 @@ int pmu_deinit(){
     return 0;
 }
 
-static double dft_r(double* in_ptr, double complex* out_ptr , unsigned int out_len, unsigned int n_bins){
+static int dft_r(double* in_ptr, double complex* out_ptr , unsigned int out_len, unsigned int n_bins){
     // debug("dft------------------------\n");
     int k,n;
     double E = 0;
@@ -197,12 +210,9 @@ static double dft_r(double* in_ptr, double complex* out_ptr , unsigned int out_l
     for (k = 0 ; k < n_bins ; ++k)
     {
         out_ptr[k] = 0;
-        for (n=0 ; n<out_len ; ++n) out_ptr[k] += (in_ptr[n] * cexp(-I*((n * k * M_PI*2 / (double)out_len))));
-         
-        temp_abs = cabs(out_ptr[k]);
-        E += temp_abs*temp_abs;   
+        for (n=0 ; n<out_len ; ++n) out_ptr[k] += (in_ptr[n] * cexp(-I*((n * k * M_PI*2 / (double)out_len))));   
     }
-    return E;
+    return 0;
 }
 
 static double hann(double* out_ptr, unsigned int out_len){
@@ -389,4 +399,5 @@ static void print_bins(complex *bins, int n_bins, double df, char* str){
     }
     debug("|\n---------------------------  ---  --  -\n\n");
 }
+
 
