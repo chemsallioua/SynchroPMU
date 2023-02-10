@@ -28,7 +28,7 @@ static unsigned int g_P;                // number of iterations in e_ipDFT
 static unsigned int g_Q;                // number of iterations in iter_i_e_ipDFT
 static double g_interf_trig;            // trigger value for interference calculation
 static double g_df;                     // frequency resolution
-static phasor g_phasor;          // global phasor bin
+static phasor g_phasor;                 // global phasor bin
 static double g_norm_factor;            // hann normalization factor 
 
 // Dynamically allocated arrays
