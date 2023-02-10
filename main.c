@@ -6,6 +6,7 @@
 #include "iter_e_ipdft_imp.h"
 
 #define NUM_CHANNNELS 3
+#define PERF_ITERATIONS 1000
 
 int main() {
 
@@ -13,7 +14,7 @@ int main() {
     
     //performance test
     clock_t start, end;
-    unsigned int perf_iterations = 1000; 
+     
     double avg_perf_time = 0;
 
     double AMP = 2;
@@ -70,16 +71,16 @@ int main() {
     pmu_config.n_chanls = NUM_CHANNNELS;
 
     pmu_init(&pmu_config);
-    for (i= 0; i<perf_iterations; i++){
+    for (i= 0; i<PERF_ITERATIONS; i++){
         start = clock();
         pmu_estimate(signal_windows, estimated_phasors);
         end = clock();
         avg_perf_time += (double)(end - start) / CLOCKS_PER_SEC;
     }
-    avg_perf_time = avg_perf_time/perf_iterations;
+    avg_perf_time = avg_perf_time/PERF_ITERATIONS;
 
     printf("\n---- [Results]: -------------------------------------------------------------------------------------\n\n");
-    printf("| Number of Itrations: %d \n", perf_iterations);
+    printf("| Number of Itrations: %d \n", PERF_ITERATIONS);
     printf("| Total Estimation Time (seconds): %.10lf \n", avg_perf_time);
     for(j=0; j<NUM_CHANNNELS; j++){
         printf("| CHANNEL: %d |\tFREQ: %.10lf (Hertz) | AMP: %.5lf (Volt) | PH: %.10lf (deg)\n",j, estimated_phasors[j].freq, estimated_phasors[j].amp, estimated_phasors[j].ph*(180/M_PI));
