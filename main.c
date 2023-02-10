@@ -2,25 +2,28 @@
 #include <complex.h>
 #include <math.h>
 #include <stdlib.h>
+#include <time.h>
 #include "iter_e_ipdft_imp.h"
 
-#define NUM_CHANNNELS 7
+#define NUM_CHANNNELS 6
 
 int main() {
 
     estimator_config pmu_config;
 
+    clock_t start, end;
+
     double AMP = 2;
-    double PH = 0;
+    double PH = 1;
     double FREQ = 50;
 
-    double ki = 0;
+    double ki = 0.1;
     double fi = 25;
     unsigned int n =2048 ;
     double fs = 25600;
     unsigned int n_bins = 11;    
     int P = 3;
-    int Q = 3;
+    int Q = 22;
     double epsilon = 0.0033;
     double dt = 1/fs;
     double df = fs/n;
@@ -63,11 +66,13 @@ int main() {
 
     pmu_init(&pmu_config);
 
+    start = clock();
     pmu_estimate(signal_windows, estimated_phasors);
+    end = clock();
 
-    printf("\n---- [Results] --------------------------------------------------------------------------------------\n");
+    printf("\n---- [Results]: total estimation time: %.10lf seconds------------------------------------------\n", (double)(end - start) / CLOCKS_PER_SEC);
     for(j=0; j<NUM_CHANNNELS; j++){
-        printf("| CHANNEL: %d |\tFREQ: %.10lf (Hertz) | AMP: %.10lf (Volt) | PH: %.10lf (deg)\n",j, estimated_phasors[j].freq, estimated_phasors[j].amp, estimated_phasors[j].ph*(180/M_PI));
+        printf("| CHANNEL: %d |\tFREQ: %.10lf (Hertz) | AMP: %.5lf (Volt) | PH: %.10lf (deg)\n",j, estimated_phasors[j].freq, estimated_phasors[j].amp, estimated_phasors[j].ph*(180/M_PI));
     }
     printf("-----------------------------------------------------------------------------------------------------\n");
 
