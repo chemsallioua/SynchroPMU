@@ -17,11 +17,11 @@ int main() {
     double avg_perf_time = 0;
 
     double AMP = 2;
-    double PH = 1;
+    double PH = 0;
     double FREQ = 50;
 
     double ki = 0.1;
-    double fi = 25;
+    double fi = 75;
     unsigned int n =2048 ;
     double fs = 25600;
     unsigned int n_bins = 11;    
@@ -51,13 +51,15 @@ int main() {
         }
     }
 
-    printf("\n== M-Class Parameters ========================================================\n");
-    printf("Signal Fundamental Component | Amp(V): %0.2lf | Ph(rad): %0.2lf | Freq(Hz): %0.2lf\n", amp, ph, freq);
-    printf("Interference | I-Mag(%%): %0.2lf | I-Freq(Hz): %0.2lf\n", ki*100, fi);
+    printf("\n== M-Class Parameters ========================================================\n\n");
+    for(j=0; j<NUM_CHANNNELS; j++){
+       printf("[Channel:%d] Fundamental Component | Amp(V): %0.2lf | Ph(rad): %0.2lf | Freq(Hz): %0.2lf\n",j, amp[j], ph[j], freq[j]); 
+    }
+    printf("\nInterference | I-Mag(%%): %0.2lf | I-Freq(Hz): %0.2lf\n", ki*100, fi);
     printf("------------------------------------------------------------------------------\n");
     printf("Window | SamplingFreq(kS/s): %0.3lf | NCycles: %1.0f | FreqResolution: %0.2lf\n", (float)fs/1000, (n*50/fs), df);
     printf("Iterations | P: %d | Q: %d \n", P, Q);
-    printf("===============================================================================\n");
+    printf("\n===============================================================================\n");
 
     pmu_config.win_len = n;
     pmu_config.fs = fs;
@@ -76,11 +78,13 @@ int main() {
     }
     avg_perf_time = avg_perf_time/perf_iterations;
 
-    printf("\n---- [Results]: total estimation time: %.10lf seconds------------------------------------------\n", avg_perf_time);
+    printf("\n---- [Results]: -------------------------------------------------------------------------------------\n\n");
+    printf("| Number of Itrations: %d \n", perf_iterations);
+    printf("| Total Estimation Time (seconds): %.10lf \n", avg_perf_time);
     for(j=0; j<NUM_CHANNNELS; j++){
         printf("| CHANNEL: %d |\tFREQ: %.10lf (Hertz) | AMP: %.5lf (Volt) | PH: %.10lf (deg)\n",j, estimated_phasors[j].freq, estimated_phasors[j].amp, estimated_phasors[j].ph*(180/M_PI));
     }
-    printf("-----------------------------------------------------------------------------------------------------\n");
+    printf("\n-----------------------------------------------------------------------------------------------------\n");
 
     pmu_deinit();
 
