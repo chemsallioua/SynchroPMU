@@ -42,7 +42,7 @@ static double** g_signal_windows;       // input signal windows pointer
 static double* g_freq_old;              // represents f(n-1) and it is initialized to f0 Hz
 static double g_thresholds[3];       	// thresholds to trigger change in the g_state S1,S2 for rocof estimation
 static double g_low_pass_coeff[3];      // low pass filter coefficients a1 , b0, b1 respectively in a digital first-order IIR low-pass filter : y[n]=b0x[n]+b1x[n−1]−a1y[n−1]
-static double* g_delay_line[2];                 // represents pre-filter rocof x(n-1) and after filter rocof y(n-1) and it is initialized to zero Hz/s
+static double* g_delay_line[2];         // represents pre-filter rocof x(n-1) and after filter rocof y(n-1) and it is initialized to zero Hz/s
 static _Bool* g_state;                  // "0" zero for static conditions, "1" one for dynamic conditions 
 
 // Pmu estimator inizialization flag
@@ -284,7 +284,7 @@ int pmu_deinit(){
     free(g_signal_windows);
 
     debug("[%s] Pmu estimator deinitialized successfully\n",__FUNCTION__);
-    
+
     // set pmu estimator to uninitialized state
     g_pmu_initialized = 0;
     return 0;
