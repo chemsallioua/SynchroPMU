@@ -1,8 +1,8 @@
 # __m-class-pmu__
 A C implementtation of the M-Class Iterative Interpolated DFT Synchrophasor Estimattion Algorithm
-# Version 1.1.2
+# Version 1.2.0
 Updates:
-- added timer to keep track of the computational time vs input signal window length, number of iterations P and Q, and number of channels.
+- new feature: now the pmu_estimate() function computes also the ROCOF
 ## __Activating Debug Logs__
 change the value of the _#define DEBUG 0_ in the __iter_e_ipdft_imp.h__ file
 
