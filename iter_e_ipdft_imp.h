@@ -3,6 +3,8 @@
 
   Pmu estimator header file. 
 
+  Authors: Chemseddine Allioua, Brahim Mazighi 
+
   Copyright (c) 2023.
   All Rights Reserved.
   Confidential and Proprietary - University of Bologna.
@@ -29,18 +31,27 @@
 typedef struct {
     unsigned int n_chanls;
     unsigned int win_len;
+    unsigned int f0;
+    unsigned int frame_rate;
     double fs;
     unsigned int n_bins;
     unsigned int P;
     unsigned int Q;
     double interf_trig;
+    double rocof_thresh[3];
+    double rocof_low_pass_coeffs[3];
 } estimator_config;
 
 typedef struct{
     double amp;
     double ph;
     double freq;
-}synchrophasor;
+}phasor;
+
+typedef struct{
+    phasor synchrophasor;
+    double rocof;
+}pmu_frame;
 
 //angle [-pi; pi] wrap in radiants
 double wrap_angle(double rad_angle);
@@ -48,8 +59,8 @@ double wrap_angle(double rad_angle);
 //pmu estimator initialization
 int pmu_init(void* cfg);
 
-//synchrophasor estimation
-int pmu_estimate(double* in_signal_windows[], synchrophasor* out_phasor);
+//synchrophasor, frequency, rocof estimation
+int pmu_estimate(double* in_signal_windows[], pmu_frame* out_frame);
 
 //pmu estimator deinitialization
 int pmu_deinit();
