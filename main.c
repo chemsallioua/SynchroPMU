@@ -25,15 +25,16 @@ int main() {
     double ki = 0.1;
     double fi = 75;
     unsigned int n =2048 ;
-    double fs = 25600;
+    unsigned int fs = 25600;
     unsigned int n_bins = 11;    
     int P = 3;
     int Q = 22;
     double epsilon = 0.0033;
     double th_coeff[3]= {3, 25, 0.035};
     double lpf_coeff[3]= {0.5913, 0.2043, 0.2043};
-    double dt = 1/fs;
-    double df = fs/n;
+
+    double dt = 1/(double)fs;
+    double df = (double)fs/n;
 
     int i, j;
     //allocating memory
@@ -83,7 +84,9 @@ int main() {
     pmu_config.rocof_low_pass_coeffs[1] = lpf_coeff[1];
     pmu_config.rocof_low_pass_coeffs[2] = lpf_coeff[2];
 
-    pmu_init(&pmu_config);
+    //pmu_init(&pmu_config, CONFIG_FROM_STRUCT);
+    char file_name[] = "config/config.ini";
+    pmu_init(&file_name, CONFIG_FROM_INI);
     for (i= 0; i<PERF_ITERATIONS; i++){
         start = clock();
         pmu_estimate(signal_windows, estimated_frame);
