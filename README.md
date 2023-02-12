@@ -21,7 +21,7 @@ or to activate
 ## __Running the program (tested on Windows)__
 to compile and run the code simply run:
 
-    gcc -I .\libs\iniparser .\libs\iniparser\dictionary.c .\libs\iniparser\iniparser.c main.c iter_e_ipdft_imp.c -o main.exe
+    gcc -I .\libs\iniparser .\libs\iniparser\dictionary.c .\libs\iniparser\iniparser.c main.c pmu_estimator.c -o main.exe
     ./main.exe
 
 ## __Computational Time Evaluation__
