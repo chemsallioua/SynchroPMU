@@ -1,10 +1,11 @@
 # __m-class-pmu__
 An ANSI C implementation of the Phasor Measurment Unit Estimator (PMU Estimator) based on the Iterative Interpolated DFT Synchrophasor Estimation Algorithm.
-# Version 1.4.1
+# Version 1.4.2
 Updates:
 
 - Now the library supprots CMake Building!
 - The inlined functions are now defined as preprocessor macros.
+- the pmu_estimate() has an additional input argument, __mid_fracsec__ which is the fraction of second relative to PPS of the mid point of the window, it is used t make the estimated phase correction.
 
 
 ## __Building the library__
