@@ -1,36 +1,44 @@
 # __m-class-pmu__
-A C implementtation of the M-Class Iterative Interpolated DFT Synchrophasor Estimattion Algorithm
-# Version 1.3.0
+An ANSI C implementation of the Phasor Measurment Unit Estimator (PMU Estimator) based on the Iterative Interpolated DFT Synchrophasor Estimation Algorithm.
+# Version 1.4.0
 Updates:
 
-- Possibility of configuring the pmu estimator via both INI file or programmatically using the config struct
-- Validity check of the config values
-- reorganized the program architecture
-- pmu estimator uses /iniparser C library to parse the config INI file.
+- Now the library supprots CMake Building!
 
-## __Activating Debug Logs__
-change the value of the _#define DEBUG 0_ in the __iter_e_ipdft_imp.h__ file
+## __Building the library__
+To build the library, first make sure that you have the following build tools are installed:
 
-to deactivate:
+- CMake (VERSION 3.0 or higher)
+- GCC
 
-    #define DEBUG 0
-or to activate
+You can build the library either using CMake or by just running the __build.sh__ provided in the root directory of the project.
+### __Building using build.sh__
 
-    #define DEBUG 1
+run the following command from the root directory of the project:
 
-## __Running the program (tested on Windows)__
-to compile and run the code simply run:
+    ./build.sh
 
-    gcc -I .\libs\iniparser .\libs\iniparser\dictionary.c .\libs\iniparser\iniparser.c main.c pmu_estimator.c -o main.exe
-    ./main.exe
+This will build both the static and shared libraries. The libraries will be placed in the __/build__ directory along with the __pmu_estimator.h__ header and the __config.ini__ estimator configuration file.
 
-## __Computational Time Evaluation__
-To keep track of the computational time per call of the __pmu_estimate()__ function for a certain number of calls, a timer is set.
-To change the number of calls to perform in order to compute the average time per call set the value of the following directive:
+### __Building using CMake__
 
-    #define PERF_ITERATIONS 1000
+run the following commands from the root directory of the project:
 
-## __Configuration__
+    mkdir build
+    cd build
+    cmake ..
+
+then to build as a static library run:
+
+    make PmuEstimatorStatic
+
+or to build as a shared library run:
+
+    make PmuEstimatorShared
+
+the libraries will be placed in the __/build__.
+
+## __Pmu Estimator Configuration__
 
 In order to configure the program, the __config.ini__ which can be found in __config/config.ini__ file must be edited. otherwise pass config structure to the __pmu_init()__ function.
 
@@ -44,3 +52,25 @@ for the __config.ini__ file:
 for the config structure:
     
     pmu_init(&config, CONFIG_FROM_STRUCT);
+
+## __Enabling Debug Logs__
+In order to compile the library with debug logs enabled, the __DEBUG__ directive must be defined. To do so, you can use the -D flag when runnin the ./build.sh command as follows:
+
+    ./build.sh -D
+
+or add the __-DDEBUG=ON__ with the __cmake__:
+
+    cmake -DDEBUG=ON ..
+## __Running the "main" _program (tested on Windows)__
+to compile and run the code simply run:
+
+    gcc -I .\libs\iniparser .\libs\iniparser\dictionary.c .\libs\iniparser\iniparser.c main.c pmu_estimator.c -o main.exe
+    ./main.exe
+
+## __Computational Time Evaluation__
+To keep track of the computational time per call of the __pmu_estimate()__ function for a certain number of calls, a timer is set.
+To change the number of calls to perform in order to compute the average time per call set the value of the following directive:
+
+    #define PERF_ITERATIONS 1000
+
+
