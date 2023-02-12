@@ -55,4 +55,6 @@ install(FILES ${PMUESTIMATOR_HEADERS} DESTINATION include)
 
 # Copy the config.ini file to the build directory
 configure_file(config/config.ini config.ini COPYONLY)
+configure_file(config/m_class_config.ini m_class_config.ini COPYONLY)
+configure_file(config/p_class_config.ini p_class_config.ini COPYONLY)
 configure_file(src/pmu_estimator.h ${CMAKE_BINARY_DIR}/pmu_estimator.h COPYONLY)
