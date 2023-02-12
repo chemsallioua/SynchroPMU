@@ -16,6 +16,7 @@ You can build the library either using CMake or by just running the __build.sh__
 
 run the following command from the root directory of the project:
 
+    (Linux: sudo chmod +x build.sh)
     ./build.sh
 
 This will build both the static and shared libraries. The libraries will be placed in the __/build__ directory along with the __pmu_estimator.h__ header and the __config.ini__ estimator configuration file.
