@@ -89,10 +89,11 @@ int main() {
     //pmu_init(&pmu_config, CONFIG_FROM_STRUCT);
     char file_name[] = "config/config.ini";
     pmu_init(&file_name, CONFIG_FROM_INI);
+    double mid_fracsec = 0;
     for (i= 0; i<PERF_ITERATIONS; i++){
         start = clock();
 
-        if(pmu_estimate(signal_windows, estimated_frame)){
+        if(pmu_estimate(signal_windows, mid_fracsec ,estimated_frame)){
             printf("Error: Estimation Failed!\n");
             return -1;
         }

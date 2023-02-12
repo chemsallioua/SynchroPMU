@@ -165,7 +165,7 @@ int pmu_init(void* cfg, _Bool config_from_ini){
 }
 
 //pmu estimation function implementation
-int pmu_estimate(double* in_signal_windows[], pmu_frame* out_frame){
+int pmu_estimate(double* in_signal_windows[], double mid_fracsec ,pmu_frame* out_frame){
 
     debug("[%s] pmu_estimate() started\n", __FUNCTION__);
 
@@ -241,7 +241,7 @@ int pmu_estimate(double* in_signal_windows[], pmu_frame* out_frame){
         // populate output frame
         out_frame[chnl].synchrophasor.freq = g_phasor.freq;
         out_frame[chnl].synchrophasor.amp = 2*g_phasor.amp/g_norm_factor;
-        out_frame[chnl].synchrophasor.ph = g_phasor.ph;
+        out_frame[chnl].synchrophasor.ph = wrap_angle(g_phasor.ph - 2*M_PI*g_f0*mid_fracsec);
         
     }
 
