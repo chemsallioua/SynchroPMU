@@ -1,5 +1,5 @@
 /*==============================================================================
-  @file iter_e_ipdft_imp.h
+  @file pmu_estimator.h
 
   Pmu estimator header file. 
 
@@ -11,16 +11,14 @@
 
 ==============================================================================*/ 
 
-#ifndef ITER_E_IPDFT_IMP_H
-#define ITER_E_IPDFT_IMP_H
+#ifndef PMU_ESTIMATOR_H
+#define PMU_ESTIMATOR_H
 
-#include <stdio.h>
-#include <complex.h>
-#include <math.h>
-#include <stdlib.h>
-#include "iniparser.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#define DEBUG 0
+//#define DEBUG 0
 
 #if DEBUG
 #define debug(...) printf(__VA_ARGS__)
@@ -69,5 +67,9 @@ int pmu_estimate(double* in_signal_windows[], pmu_frame* out_frame);
 
 //pmu estimator deinitialization
 int pmu_deinit();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* ITER_E_IPDFT_IMP_H */

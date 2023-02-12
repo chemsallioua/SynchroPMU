@@ -1,5 +1,5 @@
 /*==============================================================================
-  @file iter_e_ipdft_imp.c
+  @file pmu_estimator.c
 
   Source for the implementation of the pmu estimator based on the Iterative
   Enhanced interpolated DFT Algorithm.
@@ -12,7 +12,13 @@
 
 ==============================================================================*/ 
 
-#include "iter_e_ipdft_imp.h"
+#include "pmu_estimator.h"
+
+#include <stdio.h>
+#include <complex.h>
+#include <math.h>
+#include <stdlib.h>
+#include "iniparser.h"
 
 /*GLOBAL VARIABLES DECLARIATION==================*/
 
@@ -66,12 +72,12 @@ static void iter_e_ipDFT(complex* dftbins, complex* Xi, complex* Xf, phasor* f_p
 inline static double complex whDFT(double k, int N); 
 inline static double complex D(double k, double N);
 inline static double complex wf(int k, double f, double ampl, double phse, double df, int N,double norm_factor);
-inline static void find3LargestIndx(double arr[], int size, int *km, int *kl, int *kr);
+inline static void find3LargestIndx(double arr[], int size, unsigned int *km,unsigned int *kl,unsigned int *kr);
 
 // pmu estimator configuration functions
-static int config_from_file(char* ini_file_name);
 static int config_estimator(void* config, _Bool config_from_ini);
 static int check_config_validity();
+static int config_from_file(char* ini_file_name);
 
 // prints the bins and their index and frequency
 static void print_bins(complex *bins, int n_bins, double df, char* str); 
@@ -118,7 +124,7 @@ int pmu_init(void* cfg, _Bool config_from_ini){
     if (NULL == (g_signal_windows = (double **)malloc(g_n_channls * sizeof(double *))) ){
 		fprintf(stderr,"[%s] ERROR: g_signal_windows memory allocation failed\n",__FUNCTION__);
 		return -1;}
-    int i;
+    unsigned int i;
     for (i = 0; i < g_n_channls; i++){
         if (NULL == (g_signal_windows[i] = (double *)malloc(g_win_len * sizeof(double)) )){
             fprintf(stderr,"[%s] ERROR: g_signal_windows memory allocation failed\n",__FUNCTION__);
@@ -169,7 +175,7 @@ int pmu_estimate(double* in_signal_windows[], pmu_frame* out_frame){
     }
 
     // input signal windowing
-    int i,j, chnl;
+    unsigned int i,j, chnl;
     for (chnl = 0; chnl < g_n_channls; chnl++) {
         for(i=0; i<g_win_len; i++){
             g_signal_windows[chnl][i] = in_signal_windows[chnl][i]*g_hann_window[i];
@@ -264,7 +270,7 @@ int pmu_deinit(){
     free(g_freq_old);
     free(g_state);
 
-    int i;
+    unsigned int i;
     for (i = 0; i < g_n_channls; i++){
         free(g_signal_windows[i]);
     }
@@ -277,236 +283,7 @@ int pmu_deinit(){
     return 0;
 }
 
-static int dft_r(double* in_ptr, double complex* out_ptr , unsigned int out_len, unsigned int n_bins){
-    // debug("dft------------------------\n");
-    int k,n;
-
-    for (k = 0 ; k < n_bins ; ++k)
-    {
-        out_ptr[k] = 0;
-        for (n=0 ; n<out_len ; ++n) out_ptr[k] += (in_ptr[n] * cexp(-I*((n * k * M_PI*2 / (double)out_len))));   
-    }
-    return 0;
-}
-
-static double hann(double* out_ptr, unsigned int out_len){
-    
-    double norm_fact =0;
-    int i=0;
-    for (i=0; i < out_len; i++){
- 	   out_ptr[i] = 0.5*(1-cos(2*M_PI*i/out_len));
-       norm_fact += out_ptr[i]; 
-    }
-    return norm_fact;
-    
-}
-
-static void pureTone(double complex* Xpure, phasor phasor){
-    debug("\n[pureTone] ===============================================\n");
-    int i;
-    for (i = 0; i < g_n_bins; i++)
-    {
-      Xpure[i] = wf(i, phasor.freq, phasor.amp, phasor.ph, g_df, g_win_len, g_norm_factor) + wf(i, -phasor.freq, phasor.amp, -phasor.ph, g_df, g_win_len, g_norm_factor);
-    } 
-
-    debug("freq: %0.3lf | ampl: %0.3lf | phse: %0.3lf\n", phasor.freq, phasor.amp, phasor.ph);
-    debug_bins(Xpure, g_n_bins, g_df, "DFT BINS PURE TONE");
-    debug("[END pureTone] ================================================\n\n");
-
-}
-
-static int ipDFT(double complex* Xdft, phasor* phasor){
-
-    int j, k1, k2,k3;
-    double Xdft_mag[g_n_bins]; //magnitude of dft
-
-    debug("\n[ipDFT] ===============================================\n");
-    
-    debug_bins(Xdft, g_n_bins, g_df, "DFT BINS IN ipDFT");
-
-    for(j = 0; j < g_n_bins; j++){        
-        Xdft_mag[j] = cabs(Xdft[j]); 
-    }
-
-    find3LargestIndx(Xdft_mag, g_n_bins, &k1, &k2, &k3);
-
-    debug("[%s] k1: %d, k2: %d, k3: %d\n",__FUNCTION__, k1,k2,k3);
-
-    double delta_corr = 2*(Xdft_mag[k3]-Xdft_mag[k2])/(Xdft_mag[k2]+Xdft_mag[k3]+2*Xdft_mag[k1]);
-
-    debug("[%s] delta_corr: %lf\n",__FUNCTION__,delta_corr);
-    phasor->freq = (k1+delta_corr)*g_df;
-
-    if(fabs(delta_corr) <= pow(10,-12)){
-
-        phasor->amp =  Xdft_mag[k1];  
-        phasor->ph = carg(Xdft[k1]);
-
-        debug("[%s] freq: %.10lf, amp (not normalized): %.3lf, ph: %.3lf\n",__FUNCTION__, phasor->freq, phasor->amp, phasor->ph);
-        debug("\n[END ipDFT] ===============================================\n\n");
-
-        return 1; 
-    }
-    else{
-        phasor->amp = Xdft_mag[k1]*fabs((delta_corr*delta_corr-1)*(M_PI*delta_corr)/sin(M_PI*delta_corr)); 
-        phasor->ph = carg(Xdft[k1])-M_PI*delta_corr;
-    
-        debug("[%s] freq: %.10lf, amp (not normalized): %.3lf, ph: %.3lf\n",__FUNCTION__, phasor->freq, phasor->amp, phasor->ph);
-        debug("\n[END ipDFT] ===============================================\n\n");
-
-        return 0;
-    }
-}
-
-static void e_ipDFT(double complex* Xdft, phasor* out_phasor){
-
-    debug("\n[e_ipDFT] ===============================================\n");
-
-    phasor phsr = *out_phasor;  
-    
-    if(!ipDFT(Xdft, &phsr)){        
-        int i,j, p;
-     
-        double complex X_neg;
-        double complex X_pos[g_n_bins];
-
-        for(p=0 ; p<g_P ; p++){ 
-        
-            debug("\n[e_ipDFT ITERATION: %d] ------------\n", p+1);
-
-            for(j = 0; j < g_n_bins; j++){ 
-                X_neg = wf(j,-phsr.freq, phsr.amp ,-phsr.ph, g_df, g_win_len, g_norm_factor);           
-                X_pos[j] = Xdft[j] - X_neg; 
-            }
-
-            if(ipDFT(X_pos, &phsr)){
-                break;
-            }
-            debug("\nEND e_ipDFT ITERATION --------------------------\n");   
-        }
-    }
-    debug("\n[END e_ipDFT]========================================================\n\n");
-
-    *out_phasor = phsr;
-
-}
-
-static void iter_e_ipDFT(complex* dftbins, complex* Xi, complex* Xf, phasor* f_phsr){
-            
-        phasor f_phasor = *f_phsr;
-        phasor i_phasor;
-        double complex Xi_pure[g_n_bins];
-    
-        debug("\n[iter-e-ipDFT] ###############################################\n");
-        int i,j;
-        for (i = 0; i < g_Q; i++)
-        {   
-            debug("\n[iter-e-ipDFT ITERATION: %d] ------------\n", i+1);
-
-
-            e_ipDFT(Xi, &i_phasor);
-            pureTone(Xi_pure, i_phasor);
-            for ( j = 0; j < g_n_bins; j++)
-            {
-                Xf[j] = dftbins[j] - Xi_pure[j];
-            }
-            e_ipDFT(Xf, &f_phasor);
-
-            if(i < g_Q-1){
-
-                pureTone(Xf, f_phasor);
-
-                for ( j = 0; j < g_n_bins; j++){
-                    Xi[j] = dftbins[j] - Xf[j];
-                }
-            }
-
-            debug("\nEND iter-e-ipDFT ITERATION --------------------------\n");
-        }
-        debug("\n[END iter-e-ipDFT] ##############################################\n\n");
-
-        *f_phsr = f_phasor;
-}
-
-inline static double complex whDFT(double k, int N){
-    return -0.25*D(k-1,N) + 0.5*D(k,N) - 0.25*D(k+1,N); 
-}
-
-inline static double complex D(double k, double N){
-    return cexp(-I*M_PI*k*(N-1)/N)*sin(M_PI*k)/sin(M_PI*k/N);
-}
-
-inline static double complex wf(int k, double f, double ampl, double phse, double df, int N,double norm_factor){
-    return ampl*cexp(I*phse)*whDFT(k-(f/df), N)/norm_factor;
-}
-
-inline static void find3LargestIndx(double arr[], int size, int *km, int *kl, int *kr){
-
-  int max_val = -2147483647.0f;
-  int max_indx = -1;
-  
-  for (int i = 0; i < size; i++) {
-    if (arr[i] > max_val) {
-      max_val = arr[i];
-      max_indx = i;
-    }
-  }
-  
-  *km = max_indx;
-  *kl = max_indx-1;
-  *kr = max_indx+1;
-}
-
-static void print_bins(complex *bins, int n_bins, double df, char* str){
-
-    debug("\n--%s---------------  ---  --  -\n Indx", str);
-    for(int i = 0; i < n_bins; i++){
-        debug("|%6d", i);
-    }
-    debug("|\n Freq");
-    for(int i = 0; i < n_bins; i++){
-        debug("|%6.1f", i*df);
-    }
-    debug("|\n Bins");
-    for(int i = 0; i < n_bins; i++){
-        debug("|%6.1f", cabs(bins[i]));
-    }
-    debug("|\n---------------------------  ---  --  -\n\n");
-}
-
-static int config_from_file(char* ini_file_name){
-
-    dictionary * ini ;
-
-    ini = iniparser_load(ini_file_name);
-    if (ini==NULL) {
-        fprintf(stderr, "[%s] Error: cannot parse file: %s\n",__FUNCTION__,ini_file_name);
-        return -1 ;}
-    
-    g_n_cycles = iniparser_getint(ini, "signal:n_cycles", 0);
-    g_fs = iniparser_getint(ini, "signal:sample_rate", 0);
-    g_f0 = iniparser_getint(ini, "signal:nominal_freq", 0);
-    g_frame_rate = iniparser_getint(ini, "synchrophasor:frame_rate", 0);
-    g_n_bins = iniparser_getint(ini, "synchrophasor:number_of_dft_bins", 0);
-    g_P = iniparser_getint(ini, "synchrophasor:ipdft_iterations", 0);
-    g_Q = iniparser_getint(ini, "synchrophasor:iter_e_ipdft_iterations", 0);
-    g_interf_trig = iniparser_getdouble(ini, "synchrophasor:interference_threshold", 0);
-    g_n_channls = iniparser_getint(ini, "signal:channels", 0);
-
-    g_thresholds[0] = iniparser_getdouble(ini, "rocof:threshold_1", 0);
-    g_thresholds[1] = iniparser_getdouble(ini, "rocof:threshold_2", 0);
-    g_thresholds[2] = iniparser_getdouble(ini, "rocof:threshold_3", 0);
-
-    g_low_pass_coeff[0] = iniparser_getdouble(ini, "rocof:low_pass_filter_1", 0);
-    g_low_pass_coeff[1] = iniparser_getdouble(ini, "rocof:low_pass_filter_2", 0);
-    g_low_pass_coeff[2] = iniparser_getdouble(ini, "rocof:low_pass_filter_3", 0);
-
-    iniparser_freedict(ini);
-
-    return 0;
-    
-}
-
+// pmu estimator configuration functions
 static int config_estimator(void* config, _Bool config_from_ini){
 
     debug("[%s] Configurating pmu estimator\n",__FUNCTION__);
@@ -587,10 +364,6 @@ static int check_config_validity(){
             fprintf(stderr,"[%s] ERROR: ipdft iterations: %u is not correctly set, must be non-zero and positive\n",__FUNCTION__, g_P);
             return -1;
         }
-        if(g_Q < 0){
-            fprintf(stderr,"[%s] ERROR: iter e ipdft iterations: %u is not correctly set, must be positive\n",__FUNCTION__, g_Q);
-            return -1;
-        }
         if(g_interf_trig <= 0 || g_interf_trig > 1){
             fprintf(stderr,"[%s] ERROR: interference threshold: %lf is not correctly set, must be between ]0,1]\n",__FUNCTION__, g_interf_trig);
             return -1;
@@ -616,3 +389,239 @@ static int check_config_validity(){
         return 0;
 
 }
+
+static int config_from_file(char* ini_file_name){
+
+    dictionary * ini ;
+
+    ini = iniparser_load(ini_file_name);
+    if (ini==NULL) {
+        fprintf(stderr, "[%s] Error: cannot parse file: %s\n",__FUNCTION__,ini_file_name);
+        return -1 ;}
+    
+    g_n_cycles = iniparser_getint(ini, "signal:n_cycles", 0);
+    g_fs = iniparser_getint(ini, "signal:sample_rate", 0);
+    g_f0 = iniparser_getint(ini, "signal:nominal_freq", 0);
+    g_frame_rate = iniparser_getint(ini, "synchrophasor:frame_rate", 0);
+    g_n_bins = iniparser_getint(ini, "synchrophasor:number_of_dft_bins", 0);
+    g_P = iniparser_getint(ini, "synchrophasor:ipdft_iterations", 0);
+    g_Q = iniparser_getint(ini, "synchrophasor:iter_e_ipdft_iterations", 0);
+    g_interf_trig = iniparser_getdouble(ini, "synchrophasor:interference_threshold", 0);
+    g_n_channls = iniparser_getint(ini, "signal:channels", 0);
+
+    g_thresholds[0] = iniparser_getdouble(ini, "rocof:threshold_1", 0);
+    g_thresholds[1] = iniparser_getdouble(ini, "rocof:threshold_2", 0);
+    g_thresholds[2] = iniparser_getdouble(ini, "rocof:threshold_3", 0);
+
+    g_low_pass_coeff[0] = iniparser_getdouble(ini, "rocof:low_pass_filter_1", 0);
+    g_low_pass_coeff[1] = iniparser_getdouble(ini, "rocof:low_pass_filter_2", 0);
+    g_low_pass_coeff[2] = iniparser_getdouble(ini, "rocof:low_pass_filter_3", 0);
+
+    iniparser_freedict(ini);
+
+    return 0;
+    
+}
+
+// performs the DFT of a real sampled signal
+static int dft_r(double* in_ptr, double complex* out_ptr , unsigned int out_len, unsigned int n_bins){
+    // debug("dft------------------------\n");
+    unsigned int k,n;
+
+    for (k = 0 ; k < n_bins ; ++k)
+    {
+        out_ptr[k] = 0;
+        for (n=0 ; n<out_len ; ++n) out_ptr[k] += (in_ptr[n] * cexp(-I*((n * k * M_PI*2 / (double)out_len))));   
+    }
+    return 0;
+}
+
+// helps inizializing the hann coefficients
+static double hann(double* out_ptr, unsigned int out_len){
+    
+    double norm_fact =0;
+    unsigned int i=0;
+    for (i=0; i < out_len; i++){
+ 	   out_ptr[i] = 0.5*(1-cos(2*M_PI*i/out_len));
+       norm_fact += out_ptr[i]; 
+    }
+    return norm_fact;
+    
+}
+
+// phasor and frequency estimation main functions
+static void pureTone(double complex* Xpure, phasor phasor){
+    debug("\n[pureTone] ===============================================\n");
+    unsigned int i;
+    for (i = 0; i < g_n_bins; i++)
+    {
+      Xpure[i] = wf(i, phasor.freq, phasor.amp, phasor.ph, g_df, g_win_len, g_norm_factor) + wf(i, -phasor.freq, phasor.amp, -phasor.ph, g_df, g_win_len, g_norm_factor);
+    } 
+
+    debug("freq: %0.3lf | ampl: %0.3lf | phse: %0.3lf\n", phasor.freq, phasor.amp, phasor.ph);
+    debug_bins(Xpure, g_n_bins, g_df, "DFT BINS PURE TONE");
+    debug("[END pureTone] ================================================\n\n");
+
+}
+
+static int ipDFT(double complex* Xdft, phasor* phasor){
+
+    unsigned int j, k1, k2,k3;
+    double Xdft_mag[g_n_bins]; //magnitude of dft
+
+    debug("\n[ipDFT] ===============================================\n");
+    
+    debug_bins(Xdft, g_n_bins, g_df, "DFT BINS IN ipDFT");
+
+    for(j = 0; j < g_n_bins; j++){        
+        Xdft_mag[j] = cabs(Xdft[j]); 
+    }
+
+    find3LargestIndx(Xdft_mag, g_n_bins, &k1, &k2, &k3);
+
+    debug("[%s] k1: %d, k2: %d, k3: %d\n",__FUNCTION__, k1,k2,k3);
+
+    double delta_corr = 2*(Xdft_mag[k3]-Xdft_mag[k2])/(Xdft_mag[k2]+Xdft_mag[k3]+2*Xdft_mag[k1]);
+
+    debug("[%s] delta_corr: %lf\n",__FUNCTION__,delta_corr);
+    phasor->freq = (k1+delta_corr)*g_df;
+
+    if(fabs(delta_corr) <= pow(10,-12)){
+
+        phasor->amp =  Xdft_mag[k1];  
+        phasor->ph = carg(Xdft[k1]);
+
+        debug("[%s] freq: %.10lf, amp (not normalized): %.3lf, ph: %.3lf\n",__FUNCTION__, phasor->freq, phasor->amp, phasor->ph);
+        debug("\n[END ipDFT] ===============================================\n\n");
+
+        return 1; 
+    }
+    else{
+        phasor->amp = Xdft_mag[k1]*fabs((delta_corr*delta_corr-1)*(M_PI*delta_corr)/sin(M_PI*delta_corr)); 
+        phasor->ph = carg(Xdft[k1])-M_PI*delta_corr;
+    
+        debug("[%s] freq: %.10lf, amp (not normalized): %.3lf, ph: %.3lf\n",__FUNCTION__, phasor->freq, phasor->amp, phasor->ph);
+        debug("\n[END ipDFT] ===============================================\n\n");
+
+        return 0;
+    }
+}
+
+static void e_ipDFT(double complex* Xdft, phasor* out_phasor){
+
+    debug("\n[e_ipDFT] ===============================================\n");
+
+    phasor phsr = *out_phasor;  
+    
+    if(!ipDFT(Xdft, &phsr)){        
+        unsigned int j, p;
+     
+        double complex X_neg;
+        double complex X_pos[g_n_bins];
+
+        for(p=0 ; p<g_P ; p++){ 
+        
+            debug("\n[e_ipDFT ITERATION: %d] ------------\n", p+1);
+
+            for(j = 0; j < g_n_bins; j++){ 
+                X_neg = wf(j,-phsr.freq, phsr.amp ,-phsr.ph, g_df, g_win_len, g_norm_factor);           
+                X_pos[j] = Xdft[j] - X_neg; 
+            }
+
+            if(ipDFT(X_pos, &phsr)){
+                break;
+            }
+            debug("\nEND e_ipDFT ITERATION --------------------------\n");   
+        }
+    }
+    debug("\n[END e_ipDFT]========================================================\n\n");
+
+    *out_phasor = phsr;
+
+}
+
+static void iter_e_ipDFT(complex* dftbins, complex* Xi, complex* Xf, phasor* f_phsr){
+            
+        phasor f_phasor = *f_phsr;
+        phasor i_phasor;
+        double complex Xi_pure[g_n_bins];
+    
+        debug("\n[iter-e-ipDFT] ###############################################\n");
+        unsigned int i,j;
+        for (i = 0; i < g_Q; i++)
+        {   
+            debug("\n[iter-e-ipDFT ITERATION: %d] ------------\n", i+1);
+
+
+            e_ipDFT(Xi, &i_phasor);
+            pureTone(Xi_pure, i_phasor);
+            for ( j = 0; j < g_n_bins; j++)
+            {
+                Xf[j] = dftbins[j] - Xi_pure[j];
+            }
+            e_ipDFT(Xf, &f_phasor);
+
+            if(i < g_Q-1){
+
+                pureTone(Xf, f_phasor);
+
+                for ( j = 0; j < g_n_bins; j++){
+                    Xi[j] = dftbins[j] - Xf[j];
+                }
+            }
+
+            debug("\nEND iter-e-ipDFT ITERATION --------------------------\n");
+        }
+        debug("\n[END iter-e-ipDFT] ##############################################\n\n");
+
+        *f_phsr = f_phasor;
+}
+
+// phasor and frequency estimation helping functions
+inline static double complex whDFT(double k, int N){
+    return -0.25*D(k-1,N) + 0.5*D(k,N) - 0.25*D(k+1,N); 
+}
+
+inline static double complex D(double k, double N){
+    return cexp(-I*M_PI*k*(N-1)/N)*sin(M_PI*k)/sin(M_PI*k/N);
+}
+
+inline static double complex wf(int k, double f, double ampl, double phse, double df, int N,double norm_factor){
+    return ampl*cexp(I*phse)*whDFT(k-(f/df), N)/norm_factor;
+}
+
+inline static void find3LargestIndx(double arr[], int size, unsigned int *km,unsigned int *kl,unsigned int *kr){
+
+  int max_val = -2147483647.0f;
+  int max_indx = -1;
+  
+  for (int i = 0; i < size; i++) {
+    if (arr[i] > max_val) {
+      max_val = arr[i];
+      max_indx = i;
+    }
+  }
+  
+  *km = max_indx;
+  *kl = max_indx-1;
+  *kr = max_indx+1;
+}
+
+// prints the bins and their index and frequency
+static void print_bins(complex *bins, int n_bins, double df, char* str){
+
+    debug("\n--%s---------------  ---  --  -\n Indx", str);
+    for(int i = 0; i < n_bins; i++){
+        debug("|%6d", i);
+    }
+    debug("|\n Freq");
+    for(int i = 0; i < n_bins; i++){
+        debug("|%6.1f", i*df);
+    }
+    debug("|\n Bins");
+    for(int i = 0; i < n_bins; i++){
+        debug("|%6.1f", cabs(bins[i]));
+    }
+    debug("|\n---------------------------  ---  --  -\n\n");
+}
+
