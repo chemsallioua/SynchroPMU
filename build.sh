@@ -15,11 +15,14 @@ if [ "$machine" == "OTHER" ]; then
     exit 1
 fi
 
-debug_flag="-DDEBUG=OFF"
-while getopts "D" opt; do
+flags="-DDEBUG=OFF -DNUM_CHANLS=1"
+while getopts "DN:" opt; do
   case $opt in
     D)
-      debug_flag="-DDEBUG=ON"
+      flags="-DDEBUG=ON ${flags}"
+      ;;
+    N)
+      flags="${flags} -DNUM_CHANLS=$OPTARG"
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -35,12 +38,12 @@ cd cmake_build
 
 # run cmake and build the shared library
 if [ "${machine}" == "Linux" ]; then
-  cmake .. -G "Unix Makefiles" $debug_flag
+  cmake .. -G "Unix Makefiles" $flags
   cp libpmu_estimator.so ../build
 elif [ "${machine}" == "MinGw" ]; then
-  cmake .. -G "MinGW Makefiles" $debug_flag
+  cmake .. -G "MinGW Makefiles" $flags
 elif [ "${machine}" == "Cygwin" ]; then
-  cmake .. -G "Unix Makefiles" $debug_flag
+  cmake .. -G "Unix Makefiles" $flags
 fi
 
 make PmuEstimatorStatic

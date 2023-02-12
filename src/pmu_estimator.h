@@ -31,6 +31,10 @@ extern "C" {
 #define CONFIG_FROM_INI 1
 #define CONFIG_FROM_STRUCT 0
 
+#ifndef NUM_CHANLS
+#define NUM_CHANLS 1
+#endif
+
 typedef struct {
     unsigned int n_chanls;
     unsigned int n_cycles;
@@ -64,7 +68,7 @@ double wrap_angle(double rad_angle);
 int pmu_init(void* cfg, _Bool config_from_ini);
 
 //synchrophasor, frequency, rocof estimation
-int pmu_estimate(double* in_signal_windows[], double mid_fracsec ,pmu_frame* out_frame);
+int pmu_estimate(double (*in_signal_windows)[NUM_CHANLS], double mid_fracsec ,pmu_frame* out_frame);
 
 //pmu estimator deinitialization
 int pmu_deinit();

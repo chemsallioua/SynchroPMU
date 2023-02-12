@@ -5,7 +5,7 @@
 #include <time.h>
 #include "pmu_estimator.h"
 
-#define NUM_CHANNNELS 3
+#define NUM_CHANNNELS 6
 #define PERF_ITERATIONS 1000
 
 int main() {
@@ -44,11 +44,9 @@ int main() {
     double amp[NUM_CHANNNELS];
     double ph[NUM_CHANNNELS];
     double freq[NUM_CHANNNELS]; 
-    pmu_frame* estimated_frame = (pmu_frame *)malloc(NUM_CHANNNELS * sizeof(pmu_frame));
-    double** signal_windows = (double **)malloc(NUM_CHANNNELS * sizeof(double *));
-    for (i = 0; i < NUM_CHANNNELS; i++){
-        signal_windows[i] = (double *)malloc(n * sizeof(double));
-    }
+    pmu_frame estimated_frame[NUM_CHANNNELS];
+    double signal_windows[NUM_CHANNNELS][(int)n];
+
     //initializing windows
     for (j=0; j<NUM_CHANNNELS; j++){
         amp[j] = AMP;
@@ -113,12 +111,6 @@ int main() {
     printf("\n-----------------------------------------------------------------------------------------------------\n");
 
     pmu_deinit();
-
-    for (i = 0; i < NUM_CHANNNELS; i++){
-        free(signal_windows[i]);
-    }
-    free(signal_windows);
-    free(estimated_frame);
 
     return 0;
 }
