@@ -20,6 +20,10 @@
 #include <stdlib.h>
 #include "iniparser.h"
 
+#define D(k, N) (cexp(-I*M_PI*(k)*((N)-1)/(N))*sin(M_PI*(k))/sin(M_PI*(k)/(N)))
+#define whDFT(k, N) (-0.25*D((k-1),(N)) + 0.5*D((k),(N)) - 0.25*D((k+1),(N)))
+#define wf(k, f, ampl, phse, df, N, norm_factor) (ampl*cexp(I*phse)*whDFT((k)-((f)/(df)), N)/norm_factor)
+
 /*GLOBAL VARIABLES DECLARIATION==================*/
 
 // Synchrophasor Estimation Parameters
@@ -69,9 +73,6 @@ static void e_ipDFT(double complex* Xdft, phasor* out_phasor);
 static void iter_e_ipDFT(complex* dftbins, complex* Xi, complex* Xf, phasor* f_phsr);
 
 // phasor and frequency estimation helping functions
-inline static double complex whDFT(double k, int N); 
-inline static double complex D(double k, double N);
-inline static double complex wf(int k, double f, double ampl, double phse, double df, int N,double norm_factor);
 inline static void find3LargestIndx(double arr[], int size, unsigned int *km,unsigned int *kl,unsigned int *kr);
 
 // pmu estimator configuration functions
@@ -575,19 +576,6 @@ static void iter_e_ipDFT(complex* dftbins, complex* Xi, complex* Xf, phasor* f_p
         debug("\n[END iter-e-ipDFT] ##############################################\n\n");
 
         *f_phsr = f_phasor;
-}
-
-// phasor and frequency estimation helping functions
-inline static double complex whDFT(double k, int N){
-    return -0.25*D(k-1,N) + 0.5*D(k,N) - 0.25*D(k+1,N); 
-}
-
-inline static double complex D(double k, double N){
-    return cexp(-I*M_PI*k*(N-1)/N)*sin(M_PI*k)/sin(M_PI*k/N);
-}
-
-inline static double complex wf(int k, double f, double ampl, double phse, double df, int N,double norm_factor){
-    return ampl*cexp(I*phse)*whDFT(k-(f/df), N)/norm_factor;
 }
 
 inline static void find3LargestIndx(double arr[], int size, unsigned int *km,unsigned int *kl,unsigned int *kr){
