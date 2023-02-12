@@ -14,6 +14,12 @@
 
 #include "pmu_estimator.h"
 
+#include <stdio.h>
+#include <complex.h>
+#include <math.h>
+#include <stdlib.h>
+#include "iniparser.h"
+
 /*GLOBAL VARIABLES DECLARIATION==================*/
 
 // Synchrophasor Estimation Parameters
@@ -66,7 +72,7 @@ static void iter_e_ipDFT(complex* dftbins, complex* Xi, complex* Xf, phasor* f_p
 inline static double complex whDFT(double k, int N); 
 inline static double complex D(double k, double N);
 inline static double complex wf(int k, double f, double ampl, double phse, double df, int N,double norm_factor);
-inline static void find3LargestIndx(double arr[], int size, int *km, int *kl, int *kr);
+inline static void find3LargestIndx(double arr[], int size, unsigned int *km,unsigned int *kl,unsigned int *kr);
 
 // pmu estimator configuration functions
 static int config_estimator(void* config, _Bool config_from_ini);
@@ -118,7 +124,7 @@ int pmu_init(void* cfg, _Bool config_from_ini){
     if (NULL == (g_signal_windows = (double **)malloc(g_n_channls * sizeof(double *))) ){
 		fprintf(stderr,"[%s] ERROR: g_signal_windows memory allocation failed\n",__FUNCTION__);
 		return -1;}
-    int i;
+    unsigned int i;
     for (i = 0; i < g_n_channls; i++){
         if (NULL == (g_signal_windows[i] = (double *)malloc(g_win_len * sizeof(double)) )){
             fprintf(stderr,"[%s] ERROR: g_signal_windows memory allocation failed\n",__FUNCTION__);
@@ -169,7 +175,7 @@ int pmu_estimate(double* in_signal_windows[], pmu_frame* out_frame){
     }
 
     // input signal windowing
-    int i,j, chnl;
+    unsigned int i,j, chnl;
     for (chnl = 0; chnl < g_n_channls; chnl++) {
         for(i=0; i<g_win_len; i++){
             g_signal_windows[chnl][i] = in_signal_windows[chnl][i]*g_hann_window[i];
@@ -264,7 +270,7 @@ int pmu_deinit(){
     free(g_freq_old);
     free(g_state);
 
-    int i;
+    unsigned int i;
     for (i = 0; i < g_n_channls; i++){
         free(g_signal_windows[i]);
     }
@@ -358,10 +364,6 @@ static int check_config_validity(){
             fprintf(stderr,"[%s] ERROR: ipdft iterations: %u is not correctly set, must be non-zero and positive\n",__FUNCTION__, g_P);
             return -1;
         }
-        if(g_Q < 0){
-            fprintf(stderr,"[%s] ERROR: iter e ipdft iterations: %u is not correctly set, must be positive\n",__FUNCTION__, g_Q);
-            return -1;
-        }
         if(g_interf_trig <= 0 || g_interf_trig > 1){
             fprintf(stderr,"[%s] ERROR: interference threshold: %lf is not correctly set, must be between ]0,1]\n",__FUNCTION__, g_interf_trig);
             return -1;
@@ -424,7 +426,7 @@ static int config_from_file(char* ini_file_name){
 // performs the DFT of a real sampled signal
 static int dft_r(double* in_ptr, double complex* out_ptr , unsigned int out_len, unsigned int n_bins){
     // debug("dft------------------------\n");
-    int k,n;
+    unsigned int k,n;
 
     for (k = 0 ; k < n_bins ; ++k)
     {
@@ -438,7 +440,7 @@ static int dft_r(double* in_ptr, double complex* out_ptr , unsigned int out_len,
 static double hann(double* out_ptr, unsigned int out_len){
     
     double norm_fact =0;
-    int i=0;
+    unsigned int i=0;
     for (i=0; i < out_len; i++){
  	   out_ptr[i] = 0.5*(1-cos(2*M_PI*i/out_len));
        norm_fact += out_ptr[i]; 
@@ -450,7 +452,7 @@ static double hann(double* out_ptr, unsigned int out_len){
 // phasor and frequency estimation main functions
 static void pureTone(double complex* Xpure, phasor phasor){
     debug("\n[pureTone] ===============================================\n");
-    int i;
+    unsigned int i;
     for (i = 0; i < g_n_bins; i++)
     {
       Xpure[i] = wf(i, phasor.freq, phasor.amp, phasor.ph, g_df, g_win_len, g_norm_factor) + wf(i, -phasor.freq, phasor.amp, -phasor.ph, g_df, g_win_len, g_norm_factor);
@@ -464,7 +466,7 @@ static void pureTone(double complex* Xpure, phasor phasor){
 
 static int ipDFT(double complex* Xdft, phasor* phasor){
 
-    int j, k1, k2,k3;
+    unsigned int j, k1, k2,k3;
     double Xdft_mag[g_n_bins]; //magnitude of dft
 
     debug("\n[ipDFT] ===============================================\n");
@@ -512,7 +514,7 @@ static void e_ipDFT(double complex* Xdft, phasor* out_phasor){
     phasor phsr = *out_phasor;  
     
     if(!ipDFT(Xdft, &phsr)){        
-        int i,j, p;
+        unsigned int j, p;
      
         double complex X_neg;
         double complex X_pos[g_n_bins];
@@ -545,7 +547,7 @@ static void iter_e_ipDFT(complex* dftbins, complex* Xi, complex* Xf, phasor* f_p
         double complex Xi_pure[g_n_bins];
     
         debug("\n[iter-e-ipDFT] ###############################################\n");
-        int i,j;
+        unsigned int i,j;
         for (i = 0; i < g_Q; i++)
         {   
             debug("\n[iter-e-ipDFT ITERATION: %d] ------------\n", i+1);
@@ -588,7 +590,7 @@ inline static double complex wf(int k, double f, double ampl, double phse, doubl
     return ampl*cexp(I*phse)*whDFT(k-(f/df), N)/norm_factor;
 }
 
-inline static void find3LargestIndx(double arr[], int size, int *km, int *kl, int *kr){
+inline static void find3LargestIndx(double arr[], int size, unsigned int *km,unsigned int *kl,unsigned int *kr){
 
   int max_val = -2147483647.0f;
   int max_indx = -1;
