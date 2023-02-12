@@ -5,13 +5,16 @@ project(PmuEstimator)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_FLAGS "-g -ansi -fPIC -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-function")
 
-option(DEBUG "Build with debug symbols" OFF)
+option(DEBUG "Build with debug logs" OFF)
+option(NUM_CHANLS "Build with debug symbols" 1)
 
 if (DEBUG)
     add_definitions(-DDEBUG=1)
 else ()
     add_definitions(-DDEBUG=0)
 endif ()
+
+add_definitions(-DNUM_CHANLS=${NUM_CHANLS})
 
 # Add source files
 set(PMUESTIMATOR_SRCS
@@ -58,3 +61,14 @@ configure_file(config/config.ini config.ini COPYONLY)
 configure_file(config/m_class_config.ini m_class_config.ini COPYONLY)
 configure_file(config/p_class_config.ini p_class_config.ini COPYONLY)
 configure_file(src/pmu_estimator.h ${CMAKE_BINARY_DIR}/pmu_estimator.h COPYONLY)
+
+# Define the function to replace instances of NUM_CHANLS in the header file
+function(replace_num_channels_in_file file_path)
+  file(READ ${file_path} file_content)
+  string(REPLACE "#ifndef NUM_CHANLS\n#define NUM_CHANLS 1\n#endif\n" "" file_content "${file_content}")
+  string(REPLACE "NUM_CHANLS" ${NUM_CHANLS} file_content "${file_content}")
+  file(WRITE ${file_path} "${file_content}")
+endfunction()
+
+# Call the function to replace instances of NUM_CHANLS in the header file
+replace_num_channels_in_file(${CMAKE_BINARY_DIR}/pmu_estimator.h)
