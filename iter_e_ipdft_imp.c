@@ -13,16 +13,16 @@
 ==============================================================================*/ 
 
 #include "iter_e_ipdft_imp.h"
-#include <stdlib.h>
 
 /*GLOBAL VARIABLES DECLARIATION==================*/
 
 // Synchrophasor Estimation Parameters
 static unsigned int g_n_channls;        // nuumber of input channels
 static unsigned int g_win_len;          // number of samples in observation window
+static unsigned int g_n_cycles;         // number of cycles at nominal frequency in observation window
 static unsigned int g_f0;               // fundamental frequency in Hz
 static unsigned int g_frame_rate;       // frame rate in Frames/second
-static double g_fs;                     // sample rate in Sample/s
+static unsigned int g_fs;                     // sample rate in Sample/s
 static unsigned int g_n_bins;           // number of bins to define estimation freq band
 static unsigned int g_P;                // number of iterations in e_ipDFT
 static unsigned int g_Q;                // number of iterations in iter_i_e_ipDFT
@@ -68,6 +68,11 @@ inline static double complex D(double k, double N);
 inline static double complex wf(int k, double f, double ampl, double phse, double df, int N,double norm_factor);
 inline static void find3LargestIndx(double arr[], int size, int *km, int *kl, int *kr);
 
+// pmu estimator configuration functions
+static int config_from_file(char* ini_file_name);
+static int config_estimator(void* config, _Bool config_from_ini);
+static int check_config_validity();
+
 // prints the bins and their index and frequency
 static void print_bins(complex *bins, int n_bins, double df, char* str); 
 
@@ -82,73 +87,55 @@ double wrap_angle(double rad_angle){
 }
 
 //pmu initialization function implementation
-int pmu_init(void* cfg){
+int pmu_init(void* cfg, _Bool config_from_ini){
 
     // check if the pmu estimator is already initialized
     if(g_pmu_initialized){
-        printf("[%s] ERROR: pmu estimator already initialized\n",__FUNCTION__);
+        fprintf(stderr,"[%s] ERROR: pmu estimator already initialized\n",__FUNCTION__);
+        return -1;
+    }
+    if(config_estimator(cfg, config_from_ini)){
+        fprintf(stderr,"[%s] ERROR: pmu estimator configuration failed\n",__FUNCTION__);
         return -1;
     }
 
     debug("[%s] Initializing pmu estimator\n",__FUNCTION__);
 
-    estimator_config* config = (estimator_config*)cfg;
-    
-    // pmu estimator parameters initialization from input config
-    g_win_len = config->win_len;
-    g_fs = config->fs;
-    g_f0 = config->f0;
-    g_frame_rate = config->frame_rate;
-    g_n_bins = config->n_bins;
-    g_P = config->P;
-    g_Q = config->Q;
-    g_interf_trig = config->interf_trig;
-    g_df = g_fs/(double)g_win_len;
-    g_n_channls = config->n_chanls;
-
-    g_thresholds[0] = config->rocof_thresh[0];
-    g_thresholds[1] = config->rocof_thresh[1];
-    g_thresholds[2] = config->rocof_thresh[2];
-
-    g_low_pass_coeff[0] = config->rocof_low_pass_coeffs[0];
-    g_low_pass_coeff[1] = config->rocof_low_pass_coeffs[1];
-    g_low_pass_coeff[2] = config->rocof_low_pass_coeffs[2];
-
     // allocate memory for the global arrays
     if (NULL == (g_Xf = malloc(g_n_bins*sizeof(double complex))  )){
-		printf("[%s] ERROR: g_Xf memory allocation failed\n",__FUNCTION__);
+		fprintf(stderr,"[%s] ERROR: g_Xf memory allocation failed\n",__FUNCTION__);
 		return -1;}
     if (NULL == (g_Xi = malloc(g_n_bins*sizeof(double complex))  )){
-		printf("[%s] ERROR: g_Xi memory allocation failed\n",__FUNCTION__);
+		fprintf(stderr,"[%s] ERROR: g_Xi memory allocation failed\n",__FUNCTION__);
 		return -1;}
     if (NULL == (g_dftbins = malloc(g_n_bins*sizeof(double complex))  )){
-		printf("[%s] ERROR: g_Xi memory allocation failed\n",__FUNCTION__);
+		fprintf(stderr,"[%s] ERROR: g_Xi memory allocation failed\n",__FUNCTION__);
 		return -1;}
     if (NULL == (g_hann_window = malloc(g_win_len*sizeof(double))  )){
-		printf("[%s] ERROR: g_hann_window memory allocation failed\n",__FUNCTION__);
+		fprintf(stderr,"[%s] ERROR: g_hann_window memory allocation failed\n",__FUNCTION__);
 		return -1;}
 
     if (NULL == (g_signal_windows = (double **)malloc(g_n_channls * sizeof(double *))) ){
-		printf("[%s] ERROR: g_signal_windows memory allocation failed\n",__FUNCTION__);
+		fprintf(stderr,"[%s] ERROR: g_signal_windows memory allocation failed\n",__FUNCTION__);
 		return -1;}
     int i;
     for (i = 0; i < g_n_channls; i++){
         if (NULL == (g_signal_windows[i] = (double *)malloc(g_win_len * sizeof(double)) )){
-            printf("[%s] ERROR: g_signal_windows memory allocation failed\n",__FUNCTION__);
+            fprintf(stderr,"[%s] ERROR: g_signal_windows memory allocation failed\n",__FUNCTION__);
             return -1;}
     }
 
     if (NULL == (g_delay_line[0] = malloc(g_n_channls*sizeof(double))  )){
-        printf("[%s] ERROR: g_delay_line memory allocation failed\n",__FUNCTION__);
+        fprintf(stderr,"[%s] ERROR: g_delay_line memory allocation failed\n",__FUNCTION__);
         return -1;}
     if (NULL == (g_delay_line[1] = malloc(g_n_channls*sizeof(double))  )){
-        printf("[%s] ERROR: g_delay_line memory allocation failed\n",__FUNCTION__);
+        fprintf(stderr,"[%s] ERROR: g_delay_line memory allocation failed\n",__FUNCTION__);
         return -1;}
     if (NULL == (g_freq_old = malloc(g_n_channls*sizeof(double))  )){
-        printf("[%s] ERROR: g_freq_old memory allocation failed\n",__FUNCTION__);
+        fprintf(stderr,"[%s] ERROR: g_freq_old memory allocation failed\n",__FUNCTION__);
         return -1;}
     if (NULL == (g_state = malloc(g_n_channls*sizeof(_Bool))  )){
-        printf("[%s] ERROR: g_state memory allocation failed\n",__FUNCTION__);
+        fprintf(stderr,"[%s] ERROR: g_state memory allocation failed\n",__FUNCTION__);
         return -1;}
 
     // initialize the global arrays
@@ -177,7 +164,7 @@ int pmu_estimate(double* in_signal_windows[], pmu_frame* out_frame){
 
     // check if pmu estimator is initialized
     if(!g_pmu_initialized){
-        printf("[%s] ERROR: pmu estimator not initialized, first initialize with pmu_init function\n",__FUNCTION__);
+        fprintf(stderr,"[%s] ERROR: pmu estimator not initialized, first initialize with pmu_init function\n",__FUNCTION__);
         return -1;
     }
 
@@ -262,7 +249,7 @@ int pmu_deinit(){
 
     // check if pmu estimator is initialized
     if(!g_pmu_initialized){
-        printf("[%s] ERROR: pmu estimator not initialized, first initialize with pmu_init function\n",__FUNCTION__);
+        fprintf(stderr,"[%s] ERROR: pmu estimator not initialized, first initialize with pmu_init function\n",__FUNCTION__);
         return -1;
     }
 
@@ -487,4 +474,145 @@ static void print_bins(complex *bins, int n_bins, double df, char* str){
     debug("|\n---------------------------  ---  --  -\n\n");
 }
 
+static int config_from_file(char* ini_file_name){
 
+    dictionary * ini ;
+
+    ini = iniparser_load(ini_file_name);
+    if (ini==NULL) {
+        fprintf(stderr, "[%s] Error: cannot parse file: %s\n",__FUNCTION__,ini_file_name);
+        return -1 ;}
+    
+    g_n_cycles = iniparser_getint(ini, "signal:n_cycles", 0);
+    g_fs = iniparser_getint(ini, "signal:sample_rate", 0);
+    g_f0 = iniparser_getint(ini, "signal:nominal_freq", 0);
+    g_frame_rate = iniparser_getint(ini, "synchrophasor:frame_rate", 0);
+    g_n_bins = iniparser_getint(ini, "synchrophasor:number_of_dft_bins", 0);
+    g_P = iniparser_getint(ini, "synchrophasor:ipdft_iterations", 0);
+    g_Q = iniparser_getint(ini, "synchrophasor:iter_e_ipdft_iterations", 0);
+    g_interf_trig = iniparser_getdouble(ini, "synchrophasor:interference_threshold", 0);
+    g_n_channls = iniparser_getint(ini, "signal:channels", 0);
+
+    g_thresholds[0] = iniparser_getdouble(ini, "rocof:threshold_1", 0);
+    g_thresholds[1] = iniparser_getdouble(ini, "rocof:threshold_2", 0);
+    g_thresholds[2] = iniparser_getdouble(ini, "rocof:threshold_3", 0);
+
+    g_low_pass_coeff[0] = iniparser_getdouble(ini, "rocof:low_pass_filter_1", 0);
+    g_low_pass_coeff[1] = iniparser_getdouble(ini, "rocof:low_pass_filter_2", 0);
+    g_low_pass_coeff[2] = iniparser_getdouble(ini, "rocof:low_pass_filter_3", 0);
+
+    iniparser_freedict(ini);
+
+    return 0;
+    
+}
+
+static int config_estimator(void* config, _Bool config_from_ini){
+
+    debug("[%s] Configurating pmu estimator\n",__FUNCTION__);
+
+    // pmu estimator parameters initialization from input config
+    if(config_from_ini)
+    {
+        char* ini_file_name = (char*)config;
+        if(config_from_file(ini_file_name)){
+            fprintf(stderr,"[%s] ERROR: pmu estimator configuration failed\n",__FUNCTION__);
+            return -1;
+        }
+    }
+    else
+    {
+        estimator_config* config = (estimator_config*)config;
+
+        g_n_cycles = config->n_cycles;
+        g_fs = config->fs;
+        g_f0 = config->f0;
+        g_frame_rate = config->frame_rate;
+        g_n_bins = config->n_bins;
+        g_P = config->P;
+        g_Q = config->Q;
+        g_interf_trig = config->interf_trig;
+        g_n_channls = config->n_chanls;
+
+        g_thresholds[0] = config->rocof_thresh[0];
+        g_thresholds[1] = config->rocof_thresh[1];
+        g_thresholds[2] = config->rocof_thresh[2];
+
+        g_low_pass_coeff[0] = config->rocof_low_pass_coeffs[0];
+        g_low_pass_coeff[1] = config->rocof_low_pass_coeffs[1];
+        g_low_pass_coeff[2] = config->rocof_low_pass_coeffs[2];
+    }
+    if(check_config_validity()){
+        fprintf(stderr,"[%s] ERROR: pmu estimator configuration failed, config values not valid\n",__FUNCTION__);
+        return -1;
+    }
+    g_win_len = g_n_cycles*g_fs/g_f0;
+    g_df = (double)g_fs/(double)g_win_len;
+
+    debug("\n[%s] Configuration: g_win_len: %u, g_n_cycles: %u, g_fs: %u, g_f0: %u,\
+            g_frame_rate: %u\n g_n_bins: %u, g_P: %u, g_Q: %u, g_interf_trig: %f\n g_df: %f,\
+            g_n_channls: %u, g_thresholds: %f, %f, %f\n g_low_pass_coeff: %f, %f, %f\n\n",\
+            __FUNCTION__,g_win_len, g_n_cycles, g_fs, g_f0, g_frame_rate, g_n_bins, g_P, g_Q,\
+            g_interf_trig, g_df, g_n_channls, g_thresholds[0], g_thresholds[1], g_thresholds[2],\
+            g_low_pass_coeff[0], g_low_pass_coeff[1], g_low_pass_coeff[2]);
+
+    return 0;
+}
+
+static int check_config_validity(){
+
+        if(g_f0 != 50 && g_f0 != 60){
+            fprintf(stderr,"[%s] ERROR: nominal frequency: %u not correctly set, (allowed values 50 or 60)\n",__FUNCTION__,g_f0);
+            return -1;
+        }
+    
+        if(g_n_cycles <= 0 || g_n_cycles > 50){
+            fprintf(stderr,"[%s] ERROR: window length: %u is not correctly set, must be non-zero, positive and smaller than 50\n",__FUNCTION__, g_n_cycles);
+            return -1;
+        }
+        if(g_fs <= 0 || fmod(g_fs,g_f0) != 0.0){
+            fprintf(stderr,"[%s] ERROR: sample rate: %u is not correctly set, fs must be non-zero, positive and can be devided by f0: %u\n",__FUNCTION__,g_fs, g_f0);
+            return -1;
+        }
+
+        if(g_frame_rate <= 0 ){
+            fprintf(stderr,"[%s] ERROR: frame rate: %u is not correctly set, must be non-zero and positive\n",__FUNCTION__, g_frame_rate);
+            return -1;
+        }
+        if(g_n_bins <= 0 || g_n_bins > (g_n_cycles*g_fs/g_f0)/2){
+            fprintf(stderr,"[%s] ERROR: number of dft bins: %u for estimation is not correctly set, must be non-zero and positive, and smaller or equal than half the window length: %d \n",__FUNCTION__, g_n_bins, (g_n_cycles*g_fs/g_f0)/2);
+            return -1;
+        }
+        if(g_P <= 0){
+            fprintf(stderr,"[%s] ERROR: ipdft iterations: %u is not correctly set, must be non-zero and positive\n",__FUNCTION__, g_P);
+            return -1;
+        }
+        if(g_Q < 0){
+            fprintf(stderr,"[%s] ERROR: iter e ipdft iterations: %u is not correctly set, must be positive\n",__FUNCTION__, g_Q);
+            return -1;
+        }
+        if(g_interf_trig <= 0 || g_interf_trig > 1){
+            fprintf(stderr,"[%s] ERROR: interference threshold: %lf is not correctly set, must be between ]0,1]\n",__FUNCTION__, g_interf_trig);
+            return -1;
+        }
+        if(g_n_channls < 1){
+            fprintf(stderr,"[%s] ERROR: number of channels: %u is not correctly set, must be at least 1\n",__FUNCTION__, g_n_channls);
+            return -1;
+        }
+    
+        if(g_thresholds[0] <= 0){
+            fprintf(stderr,"[%s] ERROR: rocof threshold 1: %lf is not set, must be non-zero and positive\n",__FUNCTION__, g_thresholds[0]);
+            return -1;
+        }
+        if(g_thresholds[1] <= 0){
+            fprintf(stderr,"[%s] ERROR: rocof threshold 2: %lf is not set, must be non-zero and positive\n",__FUNCTION__, g_thresholds[1]);
+            return -1;
+        }
+        if(g_thresholds[2] <= 0){
+            fprintf(stderr,"[%s] ERROR: rocof threshold 3: %lf is not set, must be non-zero and positive\n",__FUNCTION__, g_thresholds[2]);
+            return -1;
+        }
+    
+        return 0;
+
+}

@@ -17,6 +17,8 @@
 #include <stdio.h>
 #include <complex.h>
 #include <math.h>
+#include <stdlib.h>
+#include "iniparser.h"
 
 #define DEBUG 0
 
@@ -28,12 +30,15 @@
 #define debug_bins(...)
 #endif
 
+#define CONFIG_FROM_INI 1
+#define CONFIG_FROM_STRUCT 0
+
 typedef struct {
     unsigned int n_chanls;
-    unsigned int win_len;
+    unsigned int n_cycles;
     unsigned int f0;
     unsigned int frame_rate;
-    double fs;
+    unsigned int fs;
     unsigned int n_bins;
     unsigned int P;
     unsigned int Q;
@@ -57,7 +62,7 @@ typedef struct{
 double wrap_angle(double rad_angle);
 
 //pmu estimator initialization
-int pmu_init(void* cfg);
+int pmu_init(void* cfg, _Bool config_from_ini);
 
 //synchrophasor, frequency, rocof estimation
 int pmu_estimate(double* in_signal_windows[], pmu_frame* out_frame);
