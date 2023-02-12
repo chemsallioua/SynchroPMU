@@ -1,5 +1,5 @@
 /*==============================================================================
-  @file iter_e_ipdft_imp.h
+  @file pmu_estimator.h
 
   Pmu estimator header file. 
 
@@ -11,8 +11,8 @@
 
 ==============================================================================*/ 
 
-#ifndef ITER_E_IPDFT_IMP_H
-#define ITER_E_IPDFT_IMP_H
+#ifndef PMU_ESTIMATOR_H
+#define PMU_ESTIMATOR_H
 
 #include <stdio.h>
 #include <complex.h>
