@@ -35,7 +35,7 @@
 
 typedef struct {
     unsigned int n_chanls;
-    unsigned int win_len;
+    unsigned int n_cycles;
     unsigned int f0;
     unsigned int frame_rate;
     unsigned int fs;
