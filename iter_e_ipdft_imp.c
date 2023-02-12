@@ -69,9 +69,9 @@ inline static double complex wf(int k, double f, double ampl, double phse, doubl
 inline static void find3LargestIndx(double arr[], int size, int *km, int *kl, int *kr);
 
 // pmu estimator configuration functions
-static int config_from_file(char* ini_file_name);
 static int config_estimator(void* config, _Bool config_from_ini);
 static int check_config_validity();
+static int config_from_file(char* ini_file_name);
 
 // prints the bins and their index and frequency
 static void print_bins(complex *bins, int n_bins, double df, char* str); 
@@ -277,6 +277,151 @@ int pmu_deinit(){
     return 0;
 }
 
+// pmu estimator configuration functions
+static int config_estimator(void* config, _Bool config_from_ini){
+
+    debug("[%s] Configurating pmu estimator\n",__FUNCTION__);
+
+    // pmu estimator parameters initialization from input config
+    if(config_from_ini)
+    {
+        char* ini_file_name = (char*)config;
+        if(config_from_file(ini_file_name)){
+            fprintf(stderr,"[%s] ERROR: pmu estimator configuration failed\n",__FUNCTION__);
+            return -1;
+        }
+    }
+    else
+    {
+        estimator_config* config = (estimator_config*)config;
+
+        g_n_cycles = config->n_cycles;
+        g_fs = config->fs;
+        g_f0 = config->f0;
+        g_frame_rate = config->frame_rate;
+        g_n_bins = config->n_bins;
+        g_P = config->P;
+        g_Q = config->Q;
+        g_interf_trig = config->interf_trig;
+        g_n_channls = config->n_chanls;
+
+        g_thresholds[0] = config->rocof_thresh[0];
+        g_thresholds[1] = config->rocof_thresh[1];
+        g_thresholds[2] = config->rocof_thresh[2];
+
+        g_low_pass_coeff[0] = config->rocof_low_pass_coeffs[0];
+        g_low_pass_coeff[1] = config->rocof_low_pass_coeffs[1];
+        g_low_pass_coeff[2] = config->rocof_low_pass_coeffs[2];
+    }
+    if(check_config_validity()){
+        fprintf(stderr,"[%s] ERROR: pmu estimator configuration failed, config values not valid\n",__FUNCTION__);
+        return -1;
+    }
+    g_win_len = g_n_cycles*g_fs/g_f0;
+    g_df = (double)g_fs/(double)g_win_len;
+
+    debug("\n[%s] Configuration: g_win_len: %u, g_n_cycles: %u, g_fs: %u, g_f0: %u,\
+            g_frame_rate: %u\n g_n_bins: %u, g_P: %u, g_Q: %u, g_interf_trig: %f\n g_df: %f,\
+            g_n_channls: %u, g_thresholds: %f, %f, %f\n g_low_pass_coeff: %f, %f, %f\n\n",\
+            __FUNCTION__,g_win_len, g_n_cycles, g_fs, g_f0, g_frame_rate, g_n_bins, g_P, g_Q,\
+            g_interf_trig, g_df, g_n_channls, g_thresholds[0], g_thresholds[1], g_thresholds[2],\
+            g_low_pass_coeff[0], g_low_pass_coeff[1], g_low_pass_coeff[2]);
+
+    return 0;
+}
+
+static int check_config_validity(){
+
+        if(g_f0 != 50 && g_f0 != 60){
+            fprintf(stderr,"[%s] ERROR: nominal frequency: %u not correctly set, (allowed values 50 or 60)\n",__FUNCTION__,g_f0);
+            return -1;
+        }
+    
+        if(g_n_cycles <= 0 || g_n_cycles > 50){
+            fprintf(stderr,"[%s] ERROR: window length: %u is not correctly set, must be non-zero, positive and smaller than 50\n",__FUNCTION__, g_n_cycles);
+            return -1;
+        }
+        if(g_fs <= 0 || fmod(g_fs,g_f0) != 0.0){
+            fprintf(stderr,"[%s] ERROR: sample rate: %u is not correctly set, fs must be non-zero, positive and can be devided by f0: %u\n",__FUNCTION__,g_fs, g_f0);
+            return -1;
+        }
+
+        if(g_frame_rate <= 0 ){
+            fprintf(stderr,"[%s] ERROR: frame rate: %u is not correctly set, must be non-zero and positive\n",__FUNCTION__, g_frame_rate);
+            return -1;
+        }
+        if(g_n_bins <= 0 || g_n_bins > (g_n_cycles*g_fs/g_f0)/2){
+            fprintf(stderr,"[%s] ERROR: number of dft bins: %u for estimation is not correctly set, must be non-zero and positive, and smaller or equal than half the window length: %d \n",__FUNCTION__, g_n_bins, (g_n_cycles*g_fs/g_f0)/2);
+            return -1;
+        }
+        if(g_P <= 0){
+            fprintf(stderr,"[%s] ERROR: ipdft iterations: %u is not correctly set, must be non-zero and positive\n",__FUNCTION__, g_P);
+            return -1;
+        }
+        if(g_Q < 0){
+            fprintf(stderr,"[%s] ERROR: iter e ipdft iterations: %u is not correctly set, must be positive\n",__FUNCTION__, g_Q);
+            return -1;
+        }
+        if(g_interf_trig <= 0 || g_interf_trig > 1){
+            fprintf(stderr,"[%s] ERROR: interference threshold: %lf is not correctly set, must be between ]0,1]\n",__FUNCTION__, g_interf_trig);
+            return -1;
+        }
+        if(g_n_channls < 1){
+            fprintf(stderr,"[%s] ERROR: number of channels: %u is not correctly set, must be at least 1\n",__FUNCTION__, g_n_channls);
+            return -1;
+        }
+    
+        if(g_thresholds[0] <= 0){
+            fprintf(stderr,"[%s] ERROR: rocof threshold 1: %lf is not set, must be non-zero and positive\n",__FUNCTION__, g_thresholds[0]);
+            return -1;
+        }
+        if(g_thresholds[1] <= 0){
+            fprintf(stderr,"[%s] ERROR: rocof threshold 2: %lf is not set, must be non-zero and positive\n",__FUNCTION__, g_thresholds[1]);
+            return -1;
+        }
+        if(g_thresholds[2] <= 0){
+            fprintf(stderr,"[%s] ERROR: rocof threshold 3: %lf is not set, must be non-zero and positive\n",__FUNCTION__, g_thresholds[2]);
+            return -1;
+        }
+    
+        return 0;
+
+}
+
+static int config_from_file(char* ini_file_name){
+
+    dictionary * ini ;
+
+    ini = iniparser_load(ini_file_name);
+    if (ini==NULL) {
+        fprintf(stderr, "[%s] Error: cannot parse file: %s\n",__FUNCTION__,ini_file_name);
+        return -1 ;}
+    
+    g_n_cycles = iniparser_getint(ini, "signal:n_cycles", 0);
+    g_fs = iniparser_getint(ini, "signal:sample_rate", 0);
+    g_f0 = iniparser_getint(ini, "signal:nominal_freq", 0);
+    g_frame_rate = iniparser_getint(ini, "synchrophasor:frame_rate", 0);
+    g_n_bins = iniparser_getint(ini, "synchrophasor:number_of_dft_bins", 0);
+    g_P = iniparser_getint(ini, "synchrophasor:ipdft_iterations", 0);
+    g_Q = iniparser_getint(ini, "synchrophasor:iter_e_ipdft_iterations", 0);
+    g_interf_trig = iniparser_getdouble(ini, "synchrophasor:interference_threshold", 0);
+    g_n_channls = iniparser_getint(ini, "signal:channels", 0);
+
+    g_thresholds[0] = iniparser_getdouble(ini, "rocof:threshold_1", 0);
+    g_thresholds[1] = iniparser_getdouble(ini, "rocof:threshold_2", 0);
+    g_thresholds[2] = iniparser_getdouble(ini, "rocof:threshold_3", 0);
+
+    g_low_pass_coeff[0] = iniparser_getdouble(ini, "rocof:low_pass_filter_1", 0);
+    g_low_pass_coeff[1] = iniparser_getdouble(ini, "rocof:low_pass_filter_2", 0);
+    g_low_pass_coeff[2] = iniparser_getdouble(ini, "rocof:low_pass_filter_3", 0);
+
+    iniparser_freedict(ini);
+
+    return 0;
+    
+}
+
+// performs the DFT of a real sampled signal
 static int dft_r(double* in_ptr, double complex* out_ptr , unsigned int out_len, unsigned int n_bins){
     // debug("dft------------------------\n");
     int k,n;
@@ -289,6 +434,7 @@ static int dft_r(double* in_ptr, double complex* out_ptr , unsigned int out_len,
     return 0;
 }
 
+// helps inizializing the hann coefficients
 static double hann(double* out_ptr, unsigned int out_len){
     
     double norm_fact =0;
@@ -301,6 +447,7 @@ static double hann(double* out_ptr, unsigned int out_len){
     
 }
 
+// phasor and frequency estimation main functions
 static void pureTone(double complex* Xpure, phasor phasor){
     debug("\n[pureTone] ===============================================\n");
     int i;
@@ -428,6 +575,7 @@ static void iter_e_ipDFT(complex* dftbins, complex* Xi, complex* Xf, phasor* f_p
         *f_phsr = f_phasor;
 }
 
+// phasor and frequency estimation helping functions
 inline static double complex whDFT(double k, int N){
     return -0.25*D(k-1,N) + 0.5*D(k,N) - 0.25*D(k+1,N); 
 }
@@ -457,6 +605,7 @@ inline static void find3LargestIndx(double arr[], int size, int *km, int *kl, in
   *kr = max_indx+1;
 }
 
+// prints the bins and their index and frequency
 static void print_bins(complex *bins, int n_bins, double df, char* str){
 
     debug("\n--%s---------------  ---  --  -\n Indx", str);
@@ -474,145 +623,3 @@ static void print_bins(complex *bins, int n_bins, double df, char* str){
     debug("|\n---------------------------  ---  --  -\n\n");
 }
 
-static int config_from_file(char* ini_file_name){
-
-    dictionary * ini ;
-
-    ini = iniparser_load(ini_file_name);
-    if (ini==NULL) {
-        fprintf(stderr, "[%s] Error: cannot parse file: %s\n",__FUNCTION__,ini_file_name);
-        return -1 ;}
-    
-    g_n_cycles = iniparser_getint(ini, "signal:n_cycles", 0);
-    g_fs = iniparser_getint(ini, "signal:sample_rate", 0);
-    g_f0 = iniparser_getint(ini, "signal:nominal_freq", 0);
-    g_frame_rate = iniparser_getint(ini, "synchrophasor:frame_rate", 0);
-    g_n_bins = iniparser_getint(ini, "synchrophasor:number_of_dft_bins", 0);
-    g_P = iniparser_getint(ini, "synchrophasor:ipdft_iterations", 0);
-    g_Q = iniparser_getint(ini, "synchrophasor:iter_e_ipdft_iterations", 0);
-    g_interf_trig = iniparser_getdouble(ini, "synchrophasor:interference_threshold", 0);
-    g_n_channls = iniparser_getint(ini, "signal:channels", 0);
-
-    g_thresholds[0] = iniparser_getdouble(ini, "rocof:threshold_1", 0);
-    g_thresholds[1] = iniparser_getdouble(ini, "rocof:threshold_2", 0);
-    g_thresholds[2] = iniparser_getdouble(ini, "rocof:threshold_3", 0);
-
-    g_low_pass_coeff[0] = iniparser_getdouble(ini, "rocof:low_pass_filter_1", 0);
-    g_low_pass_coeff[1] = iniparser_getdouble(ini, "rocof:low_pass_filter_2", 0);
-    g_low_pass_coeff[2] = iniparser_getdouble(ini, "rocof:low_pass_filter_3", 0);
-
-    iniparser_freedict(ini);
-
-    return 0;
-    
-}
-
-static int config_estimator(void* config, _Bool config_from_ini){
-
-    debug("[%s] Configurating pmu estimator\n",__FUNCTION__);
-
-    // pmu estimator parameters initialization from input config
-    if(config_from_ini)
-    {
-        char* ini_file_name = (char*)config;
-        if(config_from_file(ini_file_name)){
-            fprintf(stderr,"[%s] ERROR: pmu estimator configuration failed\n",__FUNCTION__);
-            return -1;
-        }
-    }
-    else
-    {
-        estimator_config* config = (estimator_config*)config;
-
-        g_n_cycles = config->n_cycles;
-        g_fs = config->fs;
-        g_f0 = config->f0;
-        g_frame_rate = config->frame_rate;
-        g_n_bins = config->n_bins;
-        g_P = config->P;
-        g_Q = config->Q;
-        g_interf_trig = config->interf_trig;
-        g_n_channls = config->n_chanls;
-
-        g_thresholds[0] = config->rocof_thresh[0];
-        g_thresholds[1] = config->rocof_thresh[1];
-        g_thresholds[2] = config->rocof_thresh[2];
-
-        g_low_pass_coeff[0] = config->rocof_low_pass_coeffs[0];
-        g_low_pass_coeff[1] = config->rocof_low_pass_coeffs[1];
-        g_low_pass_coeff[2] = config->rocof_low_pass_coeffs[2];
-    }
-    if(check_config_validity()){
-        fprintf(stderr,"[%s] ERROR: pmu estimator configuration failed, config values not valid\n",__FUNCTION__);
-        return -1;
-    }
-    g_win_len = g_n_cycles*g_fs/g_f0;
-    g_df = (double)g_fs/(double)g_win_len;
-
-    debug("\n[%s] Configuration: g_win_len: %u, g_n_cycles: %u, g_fs: %u, g_f0: %u,\
-            g_frame_rate: %u\n g_n_bins: %u, g_P: %u, g_Q: %u, g_interf_trig: %f\n g_df: %f,\
-            g_n_channls: %u, g_thresholds: %f, %f, %f\n g_low_pass_coeff: %f, %f, %f\n\n",\
-            __FUNCTION__,g_win_len, g_n_cycles, g_fs, g_f0, g_frame_rate, g_n_bins, g_P, g_Q,\
-            g_interf_trig, g_df, g_n_channls, g_thresholds[0], g_thresholds[1], g_thresholds[2],\
-            g_low_pass_coeff[0], g_low_pass_coeff[1], g_low_pass_coeff[2]);
-
-    return 0;
-}
-
-static int check_config_validity(){
-
-        if(g_f0 != 50 && g_f0 != 60){
-            fprintf(stderr,"[%s] ERROR: nominal frequency: %u not correctly set, (allowed values 50 or 60)\n",__FUNCTION__,g_f0);
-            return -1;
-        }
-    
-        if(g_n_cycles <= 0 || g_n_cycles > 50){
-            fprintf(stderr,"[%s] ERROR: window length: %u is not correctly set, must be non-zero, positive and smaller than 50\n",__FUNCTION__, g_n_cycles);
-            return -1;
-        }
-        if(g_fs <= 0 || fmod(g_fs,g_f0) != 0.0){
-            fprintf(stderr,"[%s] ERROR: sample rate: %u is not correctly set, fs must be non-zero, positive and can be devided by f0: %u\n",__FUNCTION__,g_fs, g_f0);
-            return -1;
-        }
-
-        if(g_frame_rate <= 0 ){
-            fprintf(stderr,"[%s] ERROR: frame rate: %u is not correctly set, must be non-zero and positive\n",__FUNCTION__, g_frame_rate);
-            return -1;
-        }
-        if(g_n_bins <= 0 || g_n_bins > (g_n_cycles*g_fs/g_f0)/2){
-            fprintf(stderr,"[%s] ERROR: number of dft bins: %u for estimation is not correctly set, must be non-zero and positive, and smaller or equal than half the window length: %d \n",__FUNCTION__, g_n_bins, (g_n_cycles*g_fs/g_f0)/2);
-            return -1;
-        }
-        if(g_P <= 0){
-            fprintf(stderr,"[%s] ERROR: ipdft iterations: %u is not correctly set, must be non-zero and positive\n",__FUNCTION__, g_P);
-            return -1;
-        }
-        if(g_Q < 0){
-            fprintf(stderr,"[%s] ERROR: iter e ipdft iterations: %u is not correctly set, must be positive\n",__FUNCTION__, g_Q);
-            return -1;
-        }
-        if(g_interf_trig <= 0 || g_interf_trig > 1){
-            fprintf(stderr,"[%s] ERROR: interference threshold: %lf is not correctly set, must be between ]0,1]\n",__FUNCTION__, g_interf_trig);
-            return -1;
-        }
-        if(g_n_channls < 1){
-            fprintf(stderr,"[%s] ERROR: number of channels: %u is not correctly set, must be at least 1\n",__FUNCTION__, g_n_channls);
-            return -1;
-        }
-    
-        if(g_thresholds[0] <= 0){
-            fprintf(stderr,"[%s] ERROR: rocof threshold 1: %lf is not set, must be non-zero and positive\n",__FUNCTION__, g_thresholds[0]);
-            return -1;
-        }
-        if(g_thresholds[1] <= 0){
-            fprintf(stderr,"[%s] ERROR: rocof threshold 2: %lf is not set, must be non-zero and positive\n",__FUNCTION__, g_thresholds[1]);
-            return -1;
-        }
-        if(g_thresholds[2] <= 0){
-            fprintf(stderr,"[%s] ERROR: rocof threshold 3: %lf is not set, must be non-zero and positive\n",__FUNCTION__, g_thresholds[2]);
-            return -1;
-        }
-    
-        return 0;
-
-}
