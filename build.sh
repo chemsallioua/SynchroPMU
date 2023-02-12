@@ -49,23 +49,24 @@ make PmuEstimatorShared
 # create the build folder and copy the necessary files
 rm -rf ../build
 mkdir ../build
+mkdir ../build/config
+mkdir ../build/headers
 
 if [ "${machine}" == "Linux" ]; then
-  # On Linux, copy the .so files
   cp libpmu_estimator.a ../build
   cp libpmu_estimator.so ../build
 elif [ "${machine}" == "MinGw" ]; then
-  # On Windows, copy the .dll files
   cp libpmu_estimator.a ../build
   cp libpmu_estimator.dll ../build
 elif [ "${machine}" == "Cygwin" ]; then
-  # On Windows, copy the .dll files
   cp libpmu_estimator.a ../build
   cp libpmu_estimator.dll ../build
 fi
 
-cp config.ini ../build
-cp pmu_estimator.h ../build
+cp config.ini ../build/config
+cp m_class_config.ini ../build/config
+cp p_class_config.ini ../build/config
+cp pmu_estimator.h ../build/headers
 
 # remove the cmake_build folder
 cd ..
