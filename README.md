@@ -1,9 +1,11 @@
 # __m-class-pmu__
 An ANSI C implementation of the Phasor Measurment Unit Estimator (PMU Estimator) based on the Iterative Interpolated DFT Synchrophasor Estimation Algorithm.
-# Version 1.4.0
+# Version 1.4.1
 Updates:
 
 - Now the library supprots CMake Building!
+- The inlined functions are now defined as preprocessor macros.
+
 
 ## __Building the library__
 To build the library, first make sure that you have the following build tools are installed:
@@ -65,7 +67,7 @@ or add the __-DDEBUG=ON__ with the __cmake__:
 ## __Running the "main" _program (tested on Windows)__
 to compile and run the code simply run:
 
-    gcc -I .\libs\iniparser .\libs\iniparser\dictionary.c .\libs\iniparser\iniparser.c main.c pmu_estimator.c -o main.exe
+    gcc -I .\libs\iniparser -I .\src .\libs\iniparser\dictionary.c .\libs\iniparser\iniparser.c main.c .\src\pmu_estimator.c -o main.exe
     ./main.exe
 
 ## __Computational Time Evaluation__
