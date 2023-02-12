@@ -36,6 +36,7 @@ static unsigned int g_fs;                     // sample rate in Sample/s
 static unsigned int g_n_bins;           // number of bins to define estimation freq band
 static unsigned int g_P;                // number of iterations in e_ipDFT
 static unsigned int g_Q;                // number of iterations in iter_i_e_ipDFT
+static _Bool g_iter_eipdft_enabled;     // flag to enable/disable iterative e_ipDFT
 static double g_interf_trig;            // trigger value for interference calculation
 static double g_df;                     // frequency resolution
 static phasor g_phasor;                 // global phasor bin
@@ -204,16 +205,20 @@ int pmu_estimate(double* in_signal_windows[], double mid_fracsec ,pmu_frame* out
         for ( j = 0; j < g_n_bins; j++){
 
             g_Xi[j] = g_dftbins[j] - g_Xf[j];
-
-            E_diff += cabs(g_Xi[j]*g_Xi[j]);
-            E += cabs(g_dftbins[j]*g_dftbins[j]); 
+            
+            if(g_iter_eipdft_enabled){
+                E_diff += cabs(g_Xi[j]*g_Xi[j]);
+                E += cabs(g_dftbins[j]*g_dftbins[j]); 
+            }
         }
 
         debug("Energy of Signal Spectrum = %lf | Energy of Difference= %lf\n",E, E_diff);
 
         // check if interference is present to trigger iterative enhanced interpolated DFT
-        if (E_diff > g_interf_trig*E){
-            iter_e_ipDFT(g_dftbins, g_Xi, g_Xf, &g_phasor);
+        if(g_iter_eipdft_enabled){
+            if (E_diff > g_interf_trig*E){
+                iter_e_ipDFT(g_dftbins, g_Xi, g_Xf, &g_phasor);
+            }
         }
 
         // two state rocof estimation
@@ -311,6 +316,7 @@ static int config_estimator(void* config, _Bool config_from_ini){
         g_Q = config->Q;
         g_interf_trig = config->interf_trig;
         g_n_channls = config->n_chanls;
+        g_iter_eipdft_enabled = config->iter_eipdft;
 
         g_thresholds[0] = config->rocof_thresh[0];
         g_thresholds[1] = config->rocof_thresh[1];
@@ -409,6 +415,7 @@ static int config_from_file(char* ini_file_name){
     g_Q = iniparser_getint(ini, "synchrophasor:iter_e_ipdft_iterations", 0);
     g_interf_trig = iniparser_getdouble(ini, "synchrophasor:interference_threshold", 0);
     g_n_channls = iniparser_getint(ini, "signal:channels", 0);
+    g_iter_eipdft_enabled = iniparser_getboolean(ini, "synchrophasor:iter_e_ipdft_enable", 0);
 
     g_thresholds[0] = iniparser_getdouble(ini, "rocof:threshold_1", 0);
     g_thresholds[1] = iniparser_getdouble(ini, "rocof:threshold_2", 0);

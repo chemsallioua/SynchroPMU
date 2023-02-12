@@ -26,7 +26,8 @@ int main() {
     double fi = 75;
     unsigned int n_cycles = 4;
     unsigned int fs = 25600;
-    unsigned int n_bins = 11;    
+    unsigned int n_bins = 11;  
+    _Bool iter_eipdft = 1;  
     int P = 3;
     int Q = 22;
     double epsilon = 0.0033;
@@ -77,6 +78,7 @@ int main() {
     pmu_config.Q = Q;
     pmu_config.interf_trig = epsilon;
     pmu_config.n_chanls = NUM_CHANNNELS;
+    pmu_config.iter_eipdft = iter_eipdft;
 
     pmu_config.rocof_thresh[0] = th_coeff[0];
     pmu_config.rocof_thresh[1] = th_coeff[1];

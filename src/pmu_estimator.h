@@ -40,6 +40,7 @@ typedef struct {
     unsigned int n_bins;
     unsigned int P;
     unsigned int Q;
+    _Bool iter_eipdft;
     double interf_trig;
     double rocof_thresh[3];
     double rocof_low_pass_coeffs[3];
