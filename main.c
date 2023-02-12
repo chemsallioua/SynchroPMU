@@ -91,7 +91,11 @@ int main() {
     pmu_init(&file_name, CONFIG_FROM_INI);
     for (i= 0; i<PERF_ITERATIONS; i++){
         start = clock();
-        pmu_estimate(signal_windows, estimated_frame);
+
+        if(pmu_estimate(signal_windows, estimated_frame)){
+            printf("Error: Estimation Failed!\n");
+            return -1;
+        }
         end = clock();
         avg_perf_time += (double)(end - start) / CLOCKS_PER_SEC;
     }

@@ -70,7 +70,7 @@ inline static void find3LargestIndx(double arr[], int size, int *km, int *kl, in
 
 // pmu estimator configuration functions
 static int config_from_file(char* ini_file_name);
-static int configurate(void* config, _Bool config_from_ini);
+static int config_estimator(void* config, _Bool config_from_ini);
 static int check_config_validity();
 
 // prints the bins and their index and frequency
@@ -94,7 +94,7 @@ int pmu_init(void* cfg, _Bool config_from_ini){
         fprintf(stderr,"[%s] ERROR: pmu estimator already initialized\n",__FUNCTION__);
         return -1;
     }
-    if(configurate(cfg, config_from_ini)){
+    if(config_estimator(cfg, config_from_ini)){
         fprintf(stderr,"[%s] ERROR: pmu estimator configuration failed\n",__FUNCTION__);
         return -1;
     }
@@ -507,7 +507,7 @@ static int config_from_file(char* ini_file_name){
     
 }
 
-static int configurate(void* config, _Bool config_from_ini){
+static int config_estimator(void* config, _Bool config_from_ini){
 
     debug("[%s] Configurating pmu estimator\n",__FUNCTION__);
 
@@ -542,74 +542,77 @@ static int configurate(void* config, _Bool config_from_ini){
         g_low_pass_coeff[1] = config->rocof_low_pass_coeffs[1];
         g_low_pass_coeff[2] = config->rocof_low_pass_coeffs[2];
     }
+    if(check_config_validity()){
+        fprintf(stderr,"[%s] ERROR: pmu estimator configuration failed, config values not valid\n",__FUNCTION__);
+        return -1;
+    }
     g_win_len = g_n_cycles*g_fs/g_f0;
     g_df = (double)g_fs/(double)g_win_len;
 
-    printf("g_win_len: %u, g_n_cycles: %u, g_fs: %u, g_f0: %u, g_frame_rate: %u, g_n_bins: %u, g_P: %u, g_Q: %u, g_interf_trig: %f, g_df: %f, g_n_channls: %u, g_thresholds: %f, %f, %f, g_low_pass_coeff: %f, %f, %f\n",g_win_len, g_n_cycles, g_fs, g_f0, g_frame_rate, g_n_bins, g_P, g_Q, g_interf_trig, g_df, g_n_channls, g_thresholds[0], g_thresholds[1], g_thresholds[2], g_low_pass_coeff[0], g_low_pass_coeff[1], g_low_pass_coeff[2]);
+    debug("\n[%s] Configuration: g_win_len: %u, g_n_cycles: %u, g_fs: %u, g_f0: %u,\
+            g_frame_rate: %u\n g_n_bins: %u, g_P: %u, g_Q: %u, g_interf_trig: %f\n g_df: %f,\
+            g_n_channls: %u, g_thresholds: %f, %f, %f\n g_low_pass_coeff: %f, %f, %f\n\n",\
+            __FUNCTION__,g_win_len, g_n_cycles, g_fs, g_f0, g_frame_rate, g_n_bins, g_P, g_Q,\
+            g_interf_trig, g_df, g_n_channls, g_thresholds[0], g_thresholds[1], g_thresholds[2],\
+            g_low_pass_coeff[0], g_low_pass_coeff[1], g_low_pass_coeff[2]);
 
     return 0;
 }
 
 static int check_config_validity(){
-    
-        if(g_win_len == 0){
-            fprintf(stderr,"[%s] ERROR: window length is not set\n",__FUNCTION__);
-            return -1;
-        }
-        if(g_fs == 0){
-            fprintf(stderr,"[%s] ERROR: sample rate is not set\n",__FUNCTION__);
-            return -1;
-        }
-        if(g_f0 == 0){
-            fprintf(stderr,"[%s] ERROR: nominal frequency is not set\n",__FUNCTION__);
-            return -1;
-        }
-        if(g_frame_rate == 0){
-            fprintf(stderr,"[%s] ERROR: frame rate is not set\n",__FUNCTION__);
-            return -1;
-        }
-        if(g_n_bins == 0){
-            fprintf(stderr,"[%s] ERROR: number of dft bins is not set\n",__FUNCTION__);
-            return -1;
-        }
-        if(g_P == 0){
-            fprintf(stderr,"[%s] ERROR: ipdft iterations is not set\n",__FUNCTION__);
-            return -1;
-        }
-        if(g_Q == 0){
-            fprintf(stderr,"[%s] ERROR: iter e ipdft iterations is not set\n",__FUNCTION__);
-            return -1;
-        }
-        if(g_interf_trig == 0){
-            fprintf(stderr,"[%s] ERROR: interference threshold is not set\n",__FUNCTION__);
-            return -1;
-        }
-        if(g_n_channls == 0){
-            fprintf(stderr,"[%s] ERROR: number of channels is not set\n",__FUNCTION__);
+
+        if(g_f0 != 50 && g_f0 != 60){
+            fprintf(stderr,"[%s] ERROR: nominal frequency: %u not correctly set, (allowed values 50 or 60)\n",__FUNCTION__,g_f0);
             return -1;
         }
     
-        if(g_thresholds[0] == 0){
-            fprintf(stderr,"[%s] ERROR: rocof threshold 1 is not set\n",__FUNCTION__);
+        if(g_n_cycles <= 0 || g_n_cycles > 50){
+            fprintf(stderr,"[%s] ERROR: window length: %u is not correctly set, must be non-zero, positive and smaller than 50\n",__FUNCTION__, g_n_cycles);
             return -1;
         }
-        if(g_thresholds[1] == 0){
-            fprintf(stderr,"[%s] ERROR: rocof threshold 2 is not set\n",__FUNCTION__);
+        if(g_fs <= 0 || fmod(g_fs,g_f0) != 0.0){
+            fprintf(stderr,"[%s] ERROR: sample rate: %u is not correctly set, fs must be non-zero, positive and can be devided by f0: %u\n",__FUNCTION__,g_fs, g_f0);
             return -1;
         }
-        if(g_thresholds[2] == 0){
-            fprintf(stderr,"[%s] ERROR: rocof threshold 3 is not set\n",__FUNCTION__);
+
+        if(g_frame_rate <= 0 ){
+            fprintf(stderr,"[%s] ERROR: frame rate: %u is not correctly set, must be non-zero and positive\n",__FUNCTION__, g_frame_rate);
+            return -1;
+        }
+        if(g_n_bins <= 0 || g_n_bins > (g_n_cycles*g_fs/g_f0)/2){
+            fprintf(stderr,"[%s] ERROR: number of dft bins: %u for estimation is not correctly set, must be non-zero and positive, and smaller or equal than half the window length: %d \n",__FUNCTION__, g_n_bins, (g_n_cycles*g_fs/g_f0)/2);
+            return -1;
+        }
+        if(g_P <= 0){
+            fprintf(stderr,"[%s] ERROR: ipdft iterations: %u is not correctly set, must be non-zero and positive\n",__FUNCTION__, g_P);
+            return -1;
+        }
+        if(g_Q < 0){
+            fprintf(stderr,"[%s] ERROR: iter e ipdft iterations: %u is not correctly set, must be positive\n",__FUNCTION__, g_Q);
+            return -1;
+        }
+        if(g_interf_trig <= 0 || g_interf_trig > 1){
+            fprintf(stderr,"[%s] ERROR: interference threshold: %lf is not correctly set, must be between ]0,1]\n",__FUNCTION__, g_interf_trig);
+            return -1;
+        }
+        if(g_n_channls < 1){
+            fprintf(stderr,"[%s] ERROR: number of channels: %u is not correctly set, must be at least 1\n",__FUNCTION__, g_n_channls);
             return -1;
         }
     
-        if(g_low_pass_coeff[0] == 0){
-            fprintf(stderr,"[%s] ERROR: rocof low pass filter 1 is not set\n",__FUNCTION__);
+        if(g_thresholds[0] <= 0){
+            fprintf(stderr,"[%s] ERROR: rocof threshold 1: %lf is not set, must be non-zero and positive\n",__FUNCTION__, g_thresholds[0]);
             return -1;
         }
-        if(g_low_pass_coeff[1] == 0){
-            fprintf(stderr,"[%s] ERROR: rocof low pass filter 1 is not set\n",__FUNCTION__);
+        if(g_thresholds[1] <= 0){
+            fprintf(stderr,"[%s] ERROR: rocof threshold 2: %lf is not set, must be non-zero and positive\n",__FUNCTION__, g_thresholds[1]);
             return -1;
         }
+        if(g_thresholds[2] <= 0){
+            fprintf(stderr,"[%s] ERROR: rocof threshold 3: %lf is not set, must be non-zero and positive\n",__FUNCTION__, g_thresholds[2]);
+            return -1;
+        }
+    
         return 0;
 
 }
