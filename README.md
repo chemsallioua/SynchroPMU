@@ -1,13 +1,14 @@
 # __m-class-pmu__
 An ANSI C implementation of the Phasor Measurment Unit Estimator (PMU Estimator) based on the Iterative Interpolated DFT Synchrophasor Estimation Algorithm.
-# Version 1.4.4
+# Version 1.4.5
 Updates (with respect to version 1.3.0):
 
 - Now the library supprots CMake Building!
 - The inlined functions are now defined as preprocessor macros.
-- the pmu_estimate() has an additional input argument, __mid_fracsec__ which is the fraction of second relative to PPS of the mid point of the window, it is used t make the estimated phase correction.
+- the __pmu_estimate()__ has an additional input argument, __mid_fracsec__ which is the fraction of second relative to PPS of the mid point of the window, it is used t make the estimated phase correction.
 - added a flag in the pmu configuration structure to specify whether the enhanced iterative interpolated dft should be applied or not.
 - added two new config files aimed at specifying specific configurations for M-Class pmu and for P-Class pmu.
+- fixed a bug in the __pmu_estimate()__ function that caused the program to raise an error when the input signal window is passed as a static array.
 
 
 ## __Building the library__
@@ -43,6 +44,23 @@ or to build as a shared library run:
     make PmuEstimatorShared
 
 the libraries will be placed in the __/build__.
+## __Setting Number of Channels__
+To set number of channels on which the pmu estimator will process with frames, __NUM_CHANLS__ directive must be defined. The default value is __NUM_CHANLS = 1__. To set the value, you can use the -N option when running the ./build.sh command.for example, to set the number of channels to 4:
+
+    ./build.sh -N 4
+
+or add the __-DNUM_CHANLS=4__ with the __cmake__:
+
+    cmake -DNUM_CHANLS=4 ..
+
+## __Enabling Debug Logs__
+To compile the library with debug logs enabled, the __DEBUG__ directive must be defined. To do so, you can use the -D flag when running the ./build.sh command as follows:
+
+    ./build.sh -D
+
+or add the __-DDEBUG=ON__ with the __cmake__:
+
+    cmake -DDEBUG=ON ..
 
 ## __Pmu Estimator Configuration__
 
@@ -59,24 +77,16 @@ for the config structure:
     
     pmu_init(&config, CONFIG_FROM_STRUCT);
 
-## __Enabling Debug Logs__
-In order to compile the library with debug logs enabled, the __DEBUG__ directive must be defined. To do so, you can use the -D flag when runnin the ./build.sh command as follows:
-
-    ./build.sh -D
-
-or add the __-DDEBUG=ON__ with the __cmake__:
-
-    cmake -DDEBUG=ON ..
-## __Running the "main" _program (tested on Windows)__
+## _Running the "main" _program (tested on Windows)__
 to compile and run the code simply run:
 
     gcc -I .\libs\iniparser -I .\src .\libs\iniparser\dictionary.c .\libs\iniparser\iniparser.c main.c .\src\pmu_estimator.c -o main.exe
     ./main.exe
 
-## __Computational Time Evaluation__
+## _Computational Time Evaluation_
 To keep track of the computational time per call of the __pmu_estimate()__ function for a certain number of calls, a timer is set.
 To change the number of calls to perform in order to compute the average time per call set the value of the following directive:
 
     #define PERF_ITERATIONS 1000
 
-
+in the __main.c__ file.
