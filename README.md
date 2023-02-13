@@ -1,6 +1,6 @@
 # __m-class-pmu__
 An ANSI C implementation of the Phasor Measurment Unit Estimator (PMU Estimator) based on the Iterative Interpolated DFT Synchrophasor Estimation Algorithm.
-# Version 1.4.5
+# Version 1.4.6
 Updates (with respect to version 1.3.0):
 
 - Now the library supprots CMake Building!
@@ -9,6 +9,7 @@ Updates (with respect to version 1.3.0):
 - added a flag in the pmu configuration structure to specify whether the enhanced iterative interpolated dft should be applied or not.
 - added two new config files aimed at specifying specific configurations for M-Class pmu and for P-Class pmu.
 - fixed a bug in the __pmu_estimate()__ function that caused the program to raise an error when the input signal window is passed as a static array.
+- added two examples that shows how to use the library with __CONFIG_FROM_STRUCT__ and also with __CONFIG_FROM_INI__.
 
 
 ## __Building the library__
