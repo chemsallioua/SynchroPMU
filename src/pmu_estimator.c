@@ -76,7 +76,7 @@ static void iter_e_ipDFT(complex* dftbins, complex* Xi, complex* Xf, phasor* f_p
 inline static void find3LargestIndx(double arr[], int size, unsigned int *km,unsigned int *kl,unsigned int *kr);
 
 // pmu estimator configuration functions
-static int config_estimator(void* config, _Bool config_from_ini);
+static int config_estimator(void* cfg, _Bool config_from_ini);
 static int check_config_validity();
 static int config_from_file(char* ini_file_name);
 
@@ -93,7 +93,7 @@ double wrap_angle(double rad_angle){
 	return temp - M_PI;
 }
 
-//pmu initialization function implementation
+// pmu initialization function implementation
 int pmu_init(void* cfg, _Bool config_from_ini){
 
     // check if the pmu estimator is already initialized
@@ -147,7 +147,7 @@ int pmu_init(void* cfg, _Bool config_from_ini){
     
 }
 
-//pmu estimation function implementation
+// pmu estimation function implementation
 int pmu_estimate(double (*in_signal_windows)[NUM_CHANLS], double mid_fracsec ,pmu_frame* out_frame){
 
     debug("[%s] pmu_estimate() started\n", __FUNCTION__);
@@ -236,7 +236,7 @@ int pmu_estimate(double (*in_signal_windows)[NUM_CHANLS], double mid_fracsec ,pm
 
 }
 
-//pmu deinitialization fuunction implementation
+// pmu deinitialization fuunction implementation
 int pmu_deinit(){
 
     debug("[%s] Deinitializing pmu estimator\n",__FUNCTION__);
@@ -265,15 +265,33 @@ int pmu_deinit(){
     return 0;
 }
 
+// dumps quantities of a pmu_frame struct to the specified output stream
+int pmu_dump_frame(pmu_frame *frame, FILE *stream){
+    int result = 0;
+    if (frame == NULL || stream == NULL) {
+        fprintf(stderr, "Error: NULL pointer passed as argument\n");
+        return -1;
+    }
+
+    int written = fprintf(stream, "[Synchrophasor] amplitude: %lf, phase: %lf, frequency: %lf, rocof: %lf\n",\
+                frame->synchrophasor.amp, frame->synchrophasor.ph, frame->synchrophasor.freq, frame->rocof);
+    if (written < 0) {
+        fprintf(stderr, "Error: failed to write to stream\n");
+        result -1;
+    }
+    
+    return 0;
+}
+
 // pmu estimator configuration functions
-static int config_estimator(void* config, _Bool config_from_ini){
+static int config_estimator(void* cfg, _Bool config_from_ini){
 
     debug("[%s] Configurating pmu estimator\n",__FUNCTION__);
 
     // pmu estimator parameters initialization from input config
     if(config_from_ini)
     {
-        char* ini_file_name = (char*)config;
+        char* ini_file_name = (char*)cfg;
         if(config_from_file(ini_file_name)){
             fprintf(stderr,"[%s] ERROR: pmu estimator configuration failed\n",__FUNCTION__);
             return -1;
@@ -281,11 +299,11 @@ static int config_estimator(void* config, _Bool config_from_ini){
     }
     else
     {
-        estimator_config* config = (estimator_config*)config;
+        estimator_config* config = (estimator_config*)cfg;
 
-        g_n_cycles = config->n_cycles;
         g_fs = config->fs;
         g_f0 = config->f0;
+        g_n_cycles = config->n_cycles;
         g_frame_rate = config->frame_rate;
         g_n_bins = config->n_bins;
         g_P = config->P;
@@ -301,12 +319,14 @@ static int config_estimator(void* config, _Bool config_from_ini){
         g_low_pass_coeff[1] = config->rocof_low_pass_coeffs[1];
         g_low_pass_coeff[2] = config->rocof_low_pass_coeffs[2];
     }
+
+    g_win_len = g_n_cycles*g_fs/g_f0;
+    g_df = (double)g_fs/(double)g_win_len;
+
     if(check_config_validity()){
         fprintf(stderr,"[%s] ERROR: pmu estimator configuration failed, config values not valid\n",__FUNCTION__);
         return -1;
     }
-    g_win_len = g_n_cycles*g_fs/g_f0;
-    g_df = (double)g_fs/(double)g_win_len;
 
     debug("\n[%s] Configuration: g_win_len: %u, g_n_cycles: %u, g_fs: %u, g_f0: %u,\
             g_frame_rate: %u\n g_n_bins: %u, g_P: %u, g_Q: %u, g_interf_trig: %f\n g_df: %f,\
@@ -593,4 +613,3 @@ static void print_bins(complex *bins, int n_bins, double df, char* str){
     }
     debug("|\n---------------------------  ---  --  -\n\n");
 }
-

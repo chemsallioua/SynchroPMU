@@ -10,6 +10,7 @@
   Confidential and Proprietary - University of Bologna.
 
 ==============================================================================*/ 
+#include <stdio.h>
 
 #ifndef PMU_ESTIMATOR_H
 #define PMU_ESTIMATOR_H
@@ -36,7 +37,6 @@ extern "C" {
 #endif
 
 typedef struct {
-    unsigned int n_chanls;
     unsigned int n_cycles;
     unsigned int f0;
     unsigned int frame_rate;
@@ -72,6 +72,9 @@ int pmu_estimate(double (*in_signal_windows)[NUM_CHANLS], double mid_fracsec ,pm
 
 //pmu estimator deinitialization
 int pmu_deinit();
+
+// dumps quantities of a pmu_frame struct to the specified output stream
+int pmu_dump_frame(pmu_frame *frame, FILE *stream);
 
 #ifdef __cplusplus
 }

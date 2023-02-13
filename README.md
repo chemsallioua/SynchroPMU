@@ -77,6 +77,16 @@ for the config structure:
     
     pmu_init(&config, CONFIG_FROM_STRUCT);
 
+## __Building and Running the examples__
+
+To run an example found in the __examples__ directory, you can build it by running the following command from the root directory of the project:
+
+    gcc -I ./libs/iniparser -I ./src ./libs/iniparser/dictionary.c ./libs/iniparser/iniparser.c ./examples/<name of the example c file> ./src/pmu_estimator.c -o <name of the example>
+
+then run the executable:
+    
+        ./<name of the example>
+
 ## _Running the "main" _program (tested on Windows)__
 to compile and run the code simply run:
 
