@@ -61,14 +61,11 @@ typedef struct{
     double rocof;
 }pmu_frame;
 
-//angle [-pi; pi] wrap in radiants
-double wrap_angle(double rad_angle);
-
 //pmu estimator initialization
 int pmu_init(void* cfg, _Bool config_from_ini);
 
 //synchrophasor, frequency, rocof estimation
-int pmu_estimate(double (*in_signal_windows)[NUM_CHANLS], double mid_fracsec ,pmu_frame* out_frame);
+int pmu_estimate(double *in_signal_windows, double mid_fracsec ,pmu_frame* out_frame);
 
 //pmu estimator deinitialization
 int pmu_deinit();
