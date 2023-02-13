@@ -16,7 +16,8 @@ Updates (with respect to version 1.3.0):
 To build the library, first make sure that you have the following build tools are installed:
 
 - CMake (VERSION 3.0 or higher)
-- GCC
+- A C compiler, such as GCC
+- Make
 
 You can build the library either using CMake or by just running the __build.sh__ provided in the root directory of the project.
 ### __Building using build.sh__
