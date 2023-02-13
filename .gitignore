@@ -8,3 +8,4 @@ build
 cmake_build
 simple_example.exe
 simple_example2.exe
+main.c
