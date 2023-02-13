@@ -87,17 +87,3 @@ To run an example found in the __examples__ directory, you can build it by runni
 then run the executable:
     
         ./<name of the example>
-
-## _Running the "main" _program (tested on Windows)__
-to compile and run the code simply run:
-
-    gcc -I .\libs\iniparser -I .\src .\libs\iniparser\dictionary.c .\libs\iniparser\iniparser.c main.c .\src\pmu_estimator.c -o main.exe
-    ./main.exe
-
-## _Computational Time Evaluation_
-To keep track of the computational time per call of the __pmu_estimate()__ function for a certain number of calls, a timer is set.
-To change the number of calls to perform in order to compute the average time per call set the value of the following directive:
-
-    #define PERF_ITERATIONS 1000
-
-in the __main.c__ file.
