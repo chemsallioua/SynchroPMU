@@ -48,7 +48,7 @@ int main() {
     double mid_window_fracsec = 0;
 
     // Estimating frame
-    pmu_estimate((double (*)[1])input_signal_window, mid_window_fracsec , &estimated_frame);
+    pmu_estimate((double *)input_signal_window, mid_window_fracsec , &estimated_frame);
     
     // Printing estimated frame
     pmu_dump_frame(&estimated_frame, stdout);

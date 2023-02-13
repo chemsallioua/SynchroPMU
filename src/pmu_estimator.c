@@ -20,18 +20,21 @@
 #include <stdlib.h>
 #include "iniparser.h"
 
+/*MACROS ==================*/
+
 #define D(k, N) (cexp(-I*M_PI*(k)*((N)-1)/(N))*sin(M_PI*(k))/sin(M_PI*(k)/(N)))
 #define whDFT(k, N) (-0.25*D((k-1),(N)) + 0.5*D((k),(N)) - 0.25*D((k+1),(N)))
 #define wf(k, f, ampl, phse, df, N, norm_factor) (ampl*cexp(I*phse)*whDFT((k)-((f)/(df)), N)/norm_factor)
+#define wrap_angle(rad) (((double)(rad) - 2 * M_PI * rint((double)(rad) / (2 * M_PI)))) // wraps angle (rad) in range [-pi; pi]
 
-/*GLOBAL VARIABLES DECLARIATION==================*/
+/*GLOBAL VARIABLES ==================*/
 
 // Synchrophasor Estimation Parameters
 static unsigned int g_win_len;          // number of samples in observation window
 static unsigned int g_n_cycles;         // number of cycles at nominal frequency in observation window
 static unsigned int g_f0;               // fundamental frequency in Hz
 static unsigned int g_frame_rate;       // frame rate in Frames/second
-static unsigned int g_fs;                     // sample rate in Sample/s
+static unsigned int g_fs;               // sample rate in Sample/s
 static unsigned int g_n_bins;           // number of bins to define estimation freq band
 static unsigned int g_P;                // number of iterations in e_ipDFT
 static unsigned int g_Q;                // number of iterations in iter_i_e_ipDFT
@@ -58,7 +61,7 @@ static _Bool g_state[NUM_CHANLS];               // "0" zero for static condition
 // Pmu estimator inizialization flag
 static _Bool g_pmu_initialized = 0;
 
-/*STATIC FUNCTIONS PROTOTYPES====================*/
+/*STATIC PROTOTYPES ====================*/
 
 // performs the DFT of a real sampled signal
 static int dft_r(double* in_ptr, double complex* out_ptr , unsigned int out_len, unsigned int n_bins);
@@ -83,15 +86,7 @@ static int config_from_file(char* ini_file_name);
 // prints the bins and their index and frequency
 static void print_bins(complex *bins, int n_bins, double df, char* str); 
 
-/*FUNCTIONS IMPLEMENTATION====================*/
-double wrap_angle(double rad_angle){
-	float temp = fmod(rad_angle + M_PI, 2*M_PI);
-	if(temp < 0.0){
-        temp += 2.0*M_PI;
-		}
-
-	return temp - M_PI;
-}
+/*IMPLEMENTATION ====================*/
 
 // pmu initialization function implementation
 int pmu_init(void* cfg, _Bool config_from_ini){
@@ -148,7 +143,7 @@ int pmu_init(void* cfg, _Bool config_from_ini){
 }
 
 // pmu estimation function implementation
-int pmu_estimate(double (*in_signal_windows)[NUM_CHANLS], double mid_fracsec ,pmu_frame* out_frame){
+int pmu_estimate(double *in_signal_windows, double mid_fracsec ,pmu_frame* out_frame){
 
     debug("[%s] pmu_estimate() started\n", __FUNCTION__);
 
@@ -158,11 +153,14 @@ int pmu_estimate(double (*in_signal_windows)[NUM_CHANLS], double mid_fracsec ,pm
         return -1;
     }
 
+    //printf("channels: %d, window_size: %u\n", NUM_CHANLS, g_win_len);
+
     // input signal windowing
-    unsigned int i,j, chnl;
+    unsigned int j, chnl;
     for (chnl = 0; chnl < NUM_CHANLS; chnl++) {
-        for(i=0; i<g_win_len; i++){
-            g_signal_windows[chnl][i] = in_signal_windows[chnl][i]*g_hann_window[i];
+        //printf("--------------------------------\n");
+        for(j=0; j<g_win_len; j++){
+            g_signal_windows[chnl][j] = (*((in_signal_windows+chnl*g_win_len) + j))*g_hann_window[j];
         }
     }
 
@@ -172,7 +170,7 @@ int pmu_estimate(double (*in_signal_windows)[NUM_CHANLS], double mid_fracsec ,pm
     for (chnl = 0; chnl < NUM_CHANLS; chnl++){
 
         // compuute DFT of input signal
-        dft_r(g_signal_windows[chnl], g_dftbins, g_win_len , g_n_bins);
+        dft_r((double *)g_signal_windows[chnl], g_dftbins, g_win_len , g_n_bins);
 
         debug_bins(g_dftbins, g_n_bins, g_df, "Input Signal DFT BINS");
         
@@ -267,17 +265,17 @@ int pmu_deinit(){
 
 // dumps quantities of a pmu_frame struct to the specified output stream
 int pmu_dump_frame(pmu_frame *frame, FILE *stream){
-    int result = 0;
+    
     if (frame == NULL || stream == NULL) {
         fprintf(stderr, "Error: NULL pointer passed as argument\n");
         return -1;
     }
 
     int written = fprintf(stream, "[Synchrophasor] amplitude: %lf, phase: %lf, frequency: %lf, rocof: %lf\n",\
-                frame->synchrophasor.amp, frame->synchrophasor.ph, frame->synchrophasor.freq, frame->rocof);
+                frame->synchrophasor.amp, wrap_angle(frame->synchrophasor.ph), frame->synchrophasor.freq, frame->rocof);
     if (written < 0) {
         fprintf(stderr, "Error: failed to write to stream\n");
-        result -1;
+        return -1;
     }
     
     return 0;
@@ -358,8 +356,8 @@ static int check_config_validity(){
             fprintf(stderr,"[%s] ERROR: frame rate: %u is not correctly set, must be non-zero and positive\n",__FUNCTION__, g_frame_rate);
             return -1;
         }
-        if(g_n_bins <= 0 || g_n_bins > (g_n_cycles*g_fs/g_f0)/2){
-            fprintf(stderr,"[%s] ERROR: number of dft bins: %u for estimation is not correctly set, must be non-zero and positive, and smaller or equal than half the window length: %d \n",__FUNCTION__, g_n_bins, (g_n_cycles*g_fs/g_f0)/2);
+        if(g_n_bins < g_n_cycles+2 || g_n_bins > (g_n_cycles*g_fs/g_f0)/2){
+            fprintf(stderr,"[%s] ERROR: number of dft bins: %u for estimation is not correctly set, must be greater than or equal (number of cycles +2): %d and smaller than or equal half the window length: %d \n",__FUNCTION__, g_n_bins, g_n_cycles+2 , (g_n_cycles*g_fs/g_f0)/2);
             return -1;
         }
         if(g_P <= 0){
@@ -589,6 +587,13 @@ inline static void find3LargestIndx(double arr[], int size, unsigned int *km,uns
       max_val = arr[i];
       max_indx = i;
     }
+  }
+
+  if(max_indx == 0 || max_indx == size-1){
+    *km = max_indx;
+    *kl = max_indx;
+    *kr = max_indx;
+    return;
   }
   
   *km = max_indx;
