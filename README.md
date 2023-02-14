@@ -12,6 +12,7 @@ Updates (with respect to version 1.3.0):
 - added two examples that shows how to use the library with __CONFIG_FROM_STRUCT__ and also with __CONFIG_FROM_INI__.
 - fixed bug of __wrap_angle()__ low result accuracy.
 - fixed bug in CmakeLists.txt that caused the library to raise an error when building with __NUM_CHANLS__ not set.
+- added library installation with cmake.
 
 ## __Building the library__
 To build the library, first make sure that you have the following build tools are installed:
