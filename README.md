@@ -1,4 +1,4 @@
-# __m-class-pmu__
+# PMU Estimator
 An ANSI C implementation of the Phasor Measurment Unit Estimator (PMU Estimator) based on the Iterative Interpolated DFT Synchrophasor Estimation Algorithm.
 # Version 1.4.8
 Updates (with respect to version 1.3.0):
