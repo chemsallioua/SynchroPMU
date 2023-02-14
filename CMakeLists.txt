@@ -52,15 +52,19 @@ target_include_directories(PmuEstimatorStatic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 target_include_directories(PmuEstimatorShared PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Install the libraries and header files
-install(TARGETS PmuEstimatorStatic PmuEstimatorShared
-        ARCHIVE DESTINATION lib
-        LIBRARY DESTINATION lib
-        )
+include(GNUInstallDirs)
 
-install(FILES ${PMUESTIMATOR_HEADERS} DESTINATION include)
+install(TARGETS PmuEstimatorStatic PmuEstimatorShared
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR} 
+        )
+        
+install(FILES ${PMUESTIMATOR_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 # Copy the config.ini file to the build directory
 configure_file(config/config.ini config.ini COPYONLY)
 configure_file(config/m_class_config.ini m_class_config.ini COPYONLY)
 configure_file(config/p_class_config.ini p_class_config.ini COPYONLY)
 configure_file(src/pmu_estimator.h ${CMAKE_BINARY_DIR}/pmu_estimator.h COPYONLY)
+

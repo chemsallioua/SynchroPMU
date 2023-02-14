@@ -28,7 +28,7 @@ run the following command from the root directory of the project:
     (Linux: sudo chmod +x build.sh)
     ./build.sh
 
-This will build both the static and shared libraries. The libraries will be placed in the __/build__ directory along with the __pmu_estimator.h__ header and the __config.ini__ estimator configuration file.
+This will build both the static and shared libraries. The libraries will be placed in the __/build__ directory along with the __pmu_estimator.h__ header and the __config.ini__ estimator configuration file. This will also install the libraries as it executes the __cmake --install .__ command.
 
 ### __Building using CMake__
 
@@ -47,6 +47,11 @@ or to build as a shared library run:
     make PmuEstimatorShared
 
 the libraries will be placed in the __/build__.
+
+### __Installing the library__
+use the following command to install the library from the __/build__ directory:
+
+    cmake --install .
 ## __Setting Number of Channels__
 To set number of channels on which the pmu estimator will process with frames, __NUM_CHANLS__ directive must be defined. The default value is __NUM_CHANLS = 1__. To set the value, you can use the -N option when running the ./build.sh command.for example, to set the number of channels to 4:
 
