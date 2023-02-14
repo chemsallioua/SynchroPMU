@@ -49,6 +49,9 @@ fi
 make PmuEstimatorStatic
 make PmuEstimatorShared
 
+# installing the library
+cmake --install .
+
 # create the build folder and copy the necessary files
 rm -rf ../build
 mkdir ../build

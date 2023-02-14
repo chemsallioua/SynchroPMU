@@ -1,6 +1,6 @@
 # __m-class-pmu__
 An ANSI C implementation of the Phasor Measurment Unit Estimator (PMU Estimator) based on the Iterative Interpolated DFT Synchrophasor Estimation Algorithm.
-# Version 1.4.7
+# Version 1.4.8
 Updates (with respect to version 1.3.0):
 
 - Now the library supprots CMake Building!
@@ -11,6 +11,8 @@ Updates (with respect to version 1.3.0):
 - fixed a bug in the __pmu_estimate()__ function that caused the program to raise an error when the input signal window is passed as a static array.
 - added two examples that shows how to use the library with __CONFIG_FROM_STRUCT__ and also with __CONFIG_FROM_INI__.
 - fixed bug of __wrap_angle()__ low result accuracy.
+- fixed bug in CmakeLists.txt that caused the library to raise an error when building with __NUM_CHANLS__ not set.
+- added library installation with cmake.
 
 ## __Building the library__
 To build the library, first make sure that you have the following build tools are installed:
@@ -27,7 +29,7 @@ run the following command from the root directory of the project:
     (Linux: sudo chmod +x build.sh)
     ./build.sh
 
-This will build both the static and shared libraries. The libraries will be placed in the __/build__ directory along with the __pmu_estimator.h__ header and the __config.ini__ estimator configuration file.
+This will build both the static and shared libraries. The libraries will be placed in the __/build__ directory along with the __pmu_estimator.h__ header and the __config.ini__ estimator configuration file. This will also install the libraries as it executes the __cmake --install .__ command.
 
 ### __Building using CMake__
 
@@ -46,6 +48,11 @@ or to build as a shared library run:
     make PmuEstimatorShared
 
 the libraries will be placed in the __/build__.
+
+### __Installing the library__
+use the following command to install the library from the __/build__ directory:
+
+    cmake --install .
 ## __Setting Number of Channels__
 To set number of channels on which the pmu estimator will process with frames, __NUM_CHANLS__ directive must be defined. The default value is __NUM_CHANLS = 1__. To set the value, you can use the -N option when running the ./build.sh command.for example, to set the number of channels to 4:
 

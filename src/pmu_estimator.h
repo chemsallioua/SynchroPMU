@@ -32,10 +32,6 @@ extern "C" {
 #define CONFIG_FROM_INI 1
 #define CONFIG_FROM_STRUCT 0
 
-#ifndef NUM_CHANLS
-#define NUM_CHANLS 1
-#endif
-
 typedef struct {
     unsigned int n_cycles;
     unsigned int f0;
