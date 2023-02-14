@@ -20,6 +20,11 @@
 #include <stdlib.h>
 #include "iniparser.h"
 
+/*CONSTANTS ==================*/
+#ifndef NUM_CHANLS
+#define NUM_CHANLS 1
+#endif
+
 /*MACROS ==================*/
 
 #define D(k, N) (cexp(-I*M_PI*(k)*((N)-1)/(N))*sin(M_PI*(k))/sin(M_PI*(k)/(N)))
