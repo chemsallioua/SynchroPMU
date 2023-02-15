@@ -11,6 +11,7 @@
 
 ==============================================================================*/ 
 #include <stdio.h>
+#include "func_stubs.h"
 
 #ifndef PMU_ESTIMATOR_H
 #define PMU_ESTIMATOR_H
@@ -33,35 +34,35 @@ extern "C" {
 #define CONFIG_FROM_STRUCT 0
 
 typedef struct {
-    unsigned int n_cycles;
-    unsigned int f0;
-    unsigned int frame_rate;
-    unsigned int fs;
-    unsigned int n_bins;
-    unsigned int P;
-    unsigned int Q;
-    _Bool iter_eipdft;
-    double interf_trig;
-    double rocof_thresh[3];
-    double rocof_low_pass_coeffs[3];
+    uint_p n_cycles;
+    uint_p f0;
+    uint_p frame_rate;
+    uint_p fs;
+    uint_p n_bins;
+    uint_p P;
+    uint_p Q;
+    bool_p iter_eipdft;
+    float_p interf_trig;
+    float_p rocof_thresh[3];
+    float_p rocof_low_pass_coeffs[3];
 } estimator_config;
 
 typedef struct{
-    double amp;
-    double ph;
-    double freq;
+    float_p amp;
+    float_p ph;
+    float_p freq;
 }phasor;
 
 typedef struct{
     phasor synchrophasor;
-    double rocof;
+    float_p rocof;
 }pmu_frame;
 
 //pmu estimator initialization
-int pmu_init(void* cfg, _Bool config_from_ini);
+int pmu_init(void* cfg, bool_p config_from_ini);
 
 //synchrophasor, frequency, rocof estimation
-int pmu_estimate(double *in_signal_windows, double mid_fracsec ,pmu_frame* out_frame);
+int pmu_estimate(float_p *in_signal_windows, float_p mid_fracsec ,pmu_frame* out_frame);
 
 //pmu estimator deinitialization
 int pmu_deinit();
@@ -73,4 +74,4 @@ int pmu_dump_frame(pmu_frame *frame, FILE *stream);
 }
 #endif
 
-#endif /* ITER_E_IPDFT_IMP_H */
+#endif /* PMU_ESTIMATOR_H */

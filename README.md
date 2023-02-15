@@ -1,6 +1,6 @@
 # PMU Estimator
 An ANSI C implementation of the Phasor Measurment Unit Estimator (PMU Estimator) based on the Iterative Interpolated DFT Synchrophasor Estimation Algorithm.
-# Version 1.4.8
+# Version 1.4.9
 Updates (with respect to version 1.3.0):
 
 - Now the library supprots CMake Building!
@@ -13,6 +13,7 @@ Updates (with respect to version 1.3.0):
 - fixed bug of __wrap_angle()__ low result accuracy.
 - fixed bug in CmakeLists.txt that caused the library to raise an error when building with __NUM_CHANLS__ not set.
 - added library installation with cmake.
+- now it's easily possible to stub the arithmetic functions with user implementations.
 
 ## __Building the library__
 To build the library, first make sure that you have the following build tools are installed:
@@ -71,6 +72,19 @@ or add the __-DDEBUG=ON__ with the __cmake__:
 
     cmake -DDEBUG=ON ..
 
+## __Stub Arithmetic functions__
+__func_stub.c__ is a header file that defines macros to stub out several data types and functions.
+ In the file you can use the macros to either implement your own version of a function or to replace it with a version from an external library.
+ 
+ __For example:__ if you want to implement your own version of the __pmue_fft_r__ function, you can define a new function with the same name and signature, and then use the __pmue_fft_r__ macro to replace the original function with your new implementation:
+
+    #define pmue_fft_r(in_ptr, out_ptr, out_len, n_bins) my_fft((in_ptr), (out_ptr), (out_len), (n_bins))
+
+    int_p my_fft(float_p* in_ptr, float_p complex_p* out_ptr , uint_p out_len, uint_p n_bins) {
+        //Your implementation of fft here
+    }
+
+Note that if you want to use a function from an external library, you will need to link the library to your code during the compilation process.
 ## __Pmu Estimator Configuration__
 
 In order to configure the program, the __config.ini__ which can be found in __config/config.ini__ file must be edited. otherwise pass config structure to the __pmu_init()__ function.

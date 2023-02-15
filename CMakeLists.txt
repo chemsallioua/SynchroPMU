@@ -28,6 +28,7 @@ set(PMUESTIMATOR_SRCS
 
 # Add header files
 set(PMUESTIMATOR_HEADERS
+        src/func_stubs.h
         src/pmu_estimator.h
         libs/iniparser/dictionary.h
         libs/iniparser/iniparser.h
@@ -67,4 +68,5 @@ configure_file(config/config.ini config.ini COPYONLY)
 configure_file(config/m_class_config.ini m_class_config.ini COPYONLY)
 configure_file(config/p_class_config.ini p_class_config.ini COPYONLY)
 configure_file(src/pmu_estimator.h ${CMAKE_BINARY_DIR}/pmu_estimator.h COPYONLY)
+configure_file(src/func_stubs.h ${CMAKE_BINARY_DIR}/func_stubs.h COPYONLY)
 
