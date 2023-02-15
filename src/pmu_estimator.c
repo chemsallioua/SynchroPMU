@@ -22,79 +22,79 @@
 
 /*CONSTANTS ==================*/
 #ifndef NUM_CHANLS
-#define NUM_CHANLS 1
+#define NUM_CHANLS 3
 #endif
 
 /*MACROS ==================*/
 
-#define D(k, N) (cexp(-I*M_PI*(k)*((N)-1)/(N))*sin(M_PI*(k))/sin(M_PI*(k)/(N)))
+#define D(k, N) (pmue_cexp(-I*M_PI_p*(k)*((N)-1)/(N))*pmue_sin(M_PI_p*(k))/pmue_sin(M_PI_p*(k)/(N)))
 #define whDFT(k, N) (-0.25*D((k-1),(N)) + 0.5*D((k),(N)) - 0.25*D((k+1),(N)))
-#define wf(k, f, ampl, phse, df, N, norm_factor) (ampl*cexp(I*phse)*whDFT((k)-((f)/(df)), N)/norm_factor)
-#define wrap_angle(rad) (((double)(rad) - 2 * M_PI * rint((double)(rad) / (2 * M_PI)))) // wraps angle (rad) in range [-pi; pi]
+#define wf(k, f, ampl, phse, df, N, norm_factor) (ampl*pmue_cexp(I*phse)*whDFT((k)-((f)/(df)), N)/norm_factor)
+#define wrap_angle(rad) (((float_p)(rad) - 2 * M_PI_p * rint((float_p)(rad) / (2 * M_PI_p)))) // wraps angle (rad) in range [-pi; pi]
 
 /*GLOBAL VARIABLES ==================*/
 
 // Synchrophasor Estimation Parameters
-static unsigned int g_win_len;          // number of samples in observation window
-static unsigned int g_n_cycles;         // number of cycles at nominal frequency in observation window
-static unsigned int g_f0;               // fundamental frequency in Hz
-static unsigned int g_frame_rate;       // frame rate in Frames/second
-static unsigned int g_fs;               // sample rate in Sample/s
-static unsigned int g_n_bins;           // number of bins to define estimation freq band
-static unsigned int g_P;                // number of iterations in e_ipDFT
-static unsigned int g_Q;                // number of iterations in iter_i_e_ipDFT
-static _Bool g_iter_eipdft_enabled;     // flag to enable/disable iterative e_ipDFT
-static double g_interf_trig;            // trigger value for interference calculation
-static double g_df;                     // frequency resolution
+static uint_p g_win_len;          // number of samples in observation window
+static uint_p g_n_cycles;         // number of cycles at nominal frequency in observation window
+static uint_p g_f0;               // fundamental frequency in Hz
+static uint_p g_frame_rate;       // frame rate in Frames/second
+static uint_p g_fs;               // sample rate in Sample/s
+static uint_p g_n_bins;           // number of bins to define estimation freq band
+static uint_p g_P;                // number of iterations in e_ipDFT
+static uint_p g_Q;                // number of iterations in iter_i_e_ipDFT
+static bool_p g_iter_eipdft_enabled;     // flag to enable/disable iterative e_ipDFT
+static float_p g_interf_trig;            // trigger value for interference calculation
+static float_p g_df;                     // frequency resolution
 static phasor g_phasor;                 // global phasor bin
-static double g_norm_factor;            // hann normalization factor 
+static float_p g_norm_factor;            // hann normalization factor 
 
 // Dynamically allocated arrays
-static double complex* g_Xf;                    // fundamental frequency spectrum bins arry ptr
-static double complex* g_Xi;                    // interference frequency spectrum bins arry ptr
-static double complex* g_dftbins;               // dft bins array ptr
-static double* g_hann_window;                   // hann coefficients array ptr
-static double* g_signal_windows[NUM_CHANLS];    // input signal windows pointer
+static float_p complex_p* g_Xf;                    // fundamental frequency spectrum bins arry ptr
+static float_p complex_p* g_Xi;                    // interference frequency spectrum bins arry ptr
+static float_p complex_p* g_dftbins;               // dft bins array ptr
+static float_p* g_hann_window;                   // hann coefficients array ptr
+static float_p* g_signal_windows[NUM_CHANLS];    // input signal windows pointer
 
 /*ROCOF estimation variables*/
-static double g_freq_old[NUM_CHANLS];           // represents f(n-1) and it is initialized to f0 Hz
-static double g_thresholds[3];       	        // thresholds to trigger change in the g_state S1,S2 for rocof estimation
-static double g_low_pass_coeff[3];              // low pass filter coefficients a1 , b0, b1 respectively in a digital first-order IIR low-pass filter : y[n]=b0x[n]+b1x[n−1]−a1y[n−1]
-static double g_delay_line[NUM_CHANLS][2];      // represents pre-filter rocof x(n-1) and after filter rocof y(n-1) and it is initialized to zero Hz/s
-static _Bool g_state[NUM_CHANLS];               // "0" zero for static conditions, "1" one for dynamic conditions 
+static float_p g_freq_old[NUM_CHANLS];           // represents f(n-1) and it is initialized to f0 Hz
+static float_p g_thresholds[3];       	        // thresholds to trigger change in the g_state S1,S2 for rocof estimation
+static float_p g_low_pass_coeff[3];              // low pass filter coefficients a1 , b0, b1 respectively in a digital first-order IIR low-pass filter : y[n]=b0x[n]+b1x[n−1]−a1y[n−1]
+static float_p g_delay_line[NUM_CHANLS][2];      // represents pre-filter rocof x(n-1) and after filter rocof y(n-1) and it is initialized to zero Hz/s
+static bool_p g_state[NUM_CHANLS];               // "0" zero for static conditions, "1" one for dynamic conditions 
 
 // Pmu estimator inizialization flag
-static _Bool g_pmu_initialized = 0;
+static bool_p g_pmu_initialized = 0;
 
 /*STATIC PROTOTYPES ====================*/
 
 // performs the DFT of a real sampled signal
-static int dft_r(double* in_ptr, double complex* out_ptr , unsigned int out_len, unsigned int n_bins);
+static int pmue_fft_r(float_p* in_ptr, float_p complex_p* out_ptr , uint_p out_len, uint_p n_bins);
 
 // helps inizializing the hann coefficients
-static double hann(double* out_ptr, unsigned int out_len);
+static float_p hann(float_p* out_ptr, uint_p out_len);
 
 // phasor and frequency estimation main functions 
-static void pureTone(double complex* Xpure, phasor phasor);
-static int ipDFT(double complex* Xdft, phasor* phasor);
-static void e_ipDFT(double complex* Xdft, phasor* out_phasor);
-static void iter_e_ipDFT(complex* dftbins, complex* Xi, complex* Xf, phasor* f_phsr);
+static void pureTone(float_p complex_p* Xpure, phasor phasor);
+static int ipDFT(float_p complex_p* Xdft, phasor* phasor);
+static void e_ipDFT(float_p complex_p* Xdft, phasor* out_phasor);
+static void iter_e_ipDFT(complex_p* dftbins, complex_p* Xi, complex_p* Xf, phasor* f_phsr);
 
 // phasor and frequency estimation helping functions
-inline static void find3LargestIndx(double arr[], int size, unsigned int *km,unsigned int *kl,unsigned int *kr);
+inline static void find3LargestIndx(float_p arr[], int size, uint_p *km,uint_p *kl,uint_p *kr);
 
 // pmu estimator configuration functions
-static int config_estimator(void* cfg, _Bool config_from_ini);
+static int config_estimator(void* cfg, bool_p config_from_ini);
 static int check_config_validity();
 static int config_from_file(char* ini_file_name);
 
 // prints the bins and their index and frequency
-static void print_bins(complex *bins, int n_bins, double df, char* str); 
+static void print_bins(complex_p *bins, int n_bins, float_p df, char* str); 
 
 /*IMPLEMENTATION ====================*/
 
 // pmu initialization function implementation
-int pmu_init(void* cfg, _Bool config_from_ini){
+int pmu_init(void* cfg, bool_p config_from_ini){
 
     // check if the pmu estimator is already initialized
     if(g_pmu_initialized){
@@ -109,21 +109,21 @@ int pmu_init(void* cfg, _Bool config_from_ini){
     debug("[%s] Initializing pmu estimator\n",__FUNCTION__);
 
     // allocate memory for the global arrays
-    if (NULL == (g_Xf = malloc(g_n_bins*sizeof(double complex))  )){
+    if (NULL == (g_Xf = malloc(g_n_bins*sizeof(float_p complex_p))  )){
 		fprintf(stderr,"[%s] ERROR: g_Xf memory allocation failed\n",__FUNCTION__);
 		return -1;}
-    if (NULL == (g_Xi = malloc(g_n_bins*sizeof(double complex))  )){
+    if (NULL == (g_Xi = malloc(g_n_bins*sizeof(float_p complex_p))  )){
 		fprintf(stderr,"[%s] ERROR: g_Xi memory allocation failed\n",__FUNCTION__);
 		return -1;}
-    if (NULL == (g_dftbins = malloc(g_n_bins*sizeof(double complex))  )){
+    if (NULL == (g_dftbins = malloc(g_n_bins*sizeof(float_p complex_p))  )){
 		fprintf(stderr,"[%s] ERROR: g_Xi memory allocation failed\n",__FUNCTION__);
 		return -1;}
-    if (NULL == (g_hann_window = malloc(g_win_len*sizeof(double))  )){
+    if (NULL == (g_hann_window = malloc(g_win_len*sizeof(float_p))  )){
 		fprintf(stderr,"[%s] ERROR: g_hann_window memory allocation failed\n",__FUNCTION__);
 		return -1;}
-    unsigned int i;
+    uint_p i;
     for (i = 0; i < NUM_CHANLS; i++){
-        if (NULL == (g_signal_windows[i] = (double *)malloc(g_win_len * sizeof(double)) )){
+        if (NULL == (g_signal_windows[i] = (float_p *)malloc(g_win_len * sizeof(float_p)) )){
             fprintf(stderr,"[%s] ERROR: g_signal_windows memory allocation failed\n",__FUNCTION__);
             return -1;}
     }
@@ -148,7 +148,7 @@ int pmu_init(void* cfg, _Bool config_from_ini){
 }
 
 // pmu estimation function implementation
-int pmu_estimate(double *in_signal_windows, double mid_fracsec ,pmu_frame* out_frame){
+int pmu_estimate(float_p *in_signal_windows, float_p mid_fracsec ,pmu_frame* out_frame){
 
     debug("[%s] pmu_estimate() started\n", __FUNCTION__);
 
@@ -161,7 +161,7 @@ int pmu_estimate(double *in_signal_windows, double mid_fracsec ,pmu_frame* out_f
     //printf("channels: %d, window_size: %u\n", NUM_CHANLS, g_win_len);
 
     // input signal windowing
-    unsigned int j, chnl;
+    uint_p j, chnl;
     for (chnl = 0; chnl < NUM_CHANLS; chnl++) {
         //printf("--------------------------------\n");
         for(j=0; j<g_win_len; j++){
@@ -175,7 +175,7 @@ int pmu_estimate(double *in_signal_windows, double mid_fracsec ,pmu_frame* out_f
     for (chnl = 0; chnl < NUM_CHANLS; chnl++){
 
         // compuute DFT of input signal
-        dft_r((double *)g_signal_windows[chnl], g_dftbins, g_win_len , g_n_bins);
+        pmue_fft_r((float_p *)g_signal_windows[chnl], g_dftbins, g_win_len , g_n_bins);
 
         debug_bins(g_dftbins, g_n_bins, g_df, "Input Signal DFT BINS");
         
@@ -183,8 +183,8 @@ int pmu_estimate(double *in_signal_windows, double mid_fracsec ,pmu_frame* out_f
         e_ipDFT(g_dftbins, &g_phasor);
         pureTone(g_Xf, g_phasor);
 
-        double E_diff = 0;
-        double E = 0;
+        float_p E_diff = 0;
+        float_p E = 0;
 
         // compute energy of both input signal and interference frequencies 
         for ( j = 0; j < g_n_bins; j++){
@@ -192,8 +192,8 @@ int pmu_estimate(double *in_signal_windows, double mid_fracsec ,pmu_frame* out_f
             g_Xi[j] = g_dftbins[j] - g_Xf[j];
             
             if(g_iter_eipdft_enabled){
-                E_diff += cabs(g_Xi[j]*g_Xi[j]);
-                E += cabs(g_dftbins[j]*g_dftbins[j]); 
+                E_diff += pmue_cabs(g_Xi[j]*g_Xi[j]);
+                E += pmue_cabs(g_dftbins[j]*g_dftbins[j]); 
             }
         }
 
@@ -207,12 +207,12 @@ int pmu_estimate(double *in_signal_windows, double mid_fracsec ,pmu_frame* out_f
         }
 
         // two state rocof estimation
-        double rocof = (g_phasor.freq - g_freq_old[chnl])*(float)g_frame_rate;
-        double rocof_der = (rocof - g_delay_line[0][chnl])*(float)g_frame_rate;
+        float_p rocof = (g_phasor.freq - g_freq_old[chnl])*(float)g_frame_rate;
+        float_p rocof_der = (rocof - g_delay_line[0][chnl])*(float)g_frame_rate;
 
         // update state
-        g_state[chnl] = (!g_state[chnl] && ( fabs(rocof) > g_thresholds[0] || fabs(rocof_der) > g_thresholds[1] )) ? 1 : g_state[chnl];
-        g_state[chnl] = (g_state[chnl] && fabs(rocof) < g_thresholds[2]) ? 0 : g_state[chnl];
+        g_state[chnl] = (!g_state[chnl] && ( pmue_fabs(rocof) > g_thresholds[0] || pmue_fabs(rocof_der) > g_thresholds[1] )) ? 1 : g_state[chnl];
+        g_state[chnl] = (g_state[chnl] && pmue_fabs(rocof) < g_thresholds[2]) ? 0 : g_state[chnl];
         
         // apply low pass filter if state is 0
         if(!g_state[chnl]){
@@ -231,7 +231,7 @@ int pmu_estimate(double *in_signal_windows, double mid_fracsec ,pmu_frame* out_f
         // populate output frame
         out_frame[chnl].synchrophasor.freq = g_phasor.freq;
         out_frame[chnl].synchrophasor.amp = 2*g_phasor.amp/g_norm_factor;
-        out_frame[chnl].synchrophasor.ph = wrap_angle(g_phasor.ph - 2*M_PI*g_f0*mid_fracsec);
+        out_frame[chnl].synchrophasor.ph = wrap_angle(g_phasor.ph - 2*M_PI_p*g_f0*mid_fracsec);
         
     }
 
@@ -256,7 +256,7 @@ int pmu_deinit(){
 	free(g_dftbins);
     free(g_hann_window);
 
-    unsigned int i;
+    uint_p i;
     for (i = 0; i < NUM_CHANLS; i++){
         free(g_signal_windows[i]);
     }
@@ -287,7 +287,7 @@ int pmu_dump_frame(pmu_frame *frame, FILE *stream){
 }
 
 // pmu estimator configuration functions
-static int config_estimator(void* cfg, _Bool config_from_ini){
+static int config_estimator(void* cfg, bool_p config_from_ini){
 
     debug("[%s] Configurating pmu estimator\n",__FUNCTION__);
 
@@ -324,7 +324,7 @@ static int config_estimator(void* cfg, _Bool config_from_ini){
     }
 
     g_win_len = g_n_cycles*g_fs/g_f0;
-    g_df = (double)g_fs/(double)g_win_len;
+    g_df = (float_p)g_fs/(float_p)g_win_len;
 
     if(check_config_validity()){
         fprintf(stderr,"[%s] ERROR: pmu estimator configuration failed, config values not valid\n",__FUNCTION__);
@@ -404,23 +404,23 @@ static int config_from_file(char* ini_file_name){
         fprintf(stderr, "[%s] Error: cannot parse file: %s\n",__FUNCTION__,ini_file_name);
         return -1 ;}
     
-    g_n_cycles = iniparser_getint(ini, "signal:n_cycles", 0);
-    g_fs = iniparser_getint(ini, "signal:sample_rate", 0);
-    g_f0 = iniparser_getint(ini, "signal:nominal_freq", 0);
-    g_frame_rate = iniparser_getint(ini, "synchrophasor:frame_rate", 0);
-    g_n_bins = iniparser_getint(ini, "synchrophasor:number_of_dft_bins", 0);
-    g_P = iniparser_getint(ini, "synchrophasor:ipdft_iterations", 0);
-    g_Q = iniparser_getint(ini, "synchrophasor:iter_e_ipdft_iterations", 0);
-    g_interf_trig = iniparser_getdouble(ini, "synchrophasor:interference_threshold", 0);
-    g_iter_eipdft_enabled = iniparser_getboolean(ini, "synchrophasor:iter_e_ipdft_enable", 0);
+    g_n_cycles = (int)iniparser_getint(ini, "signal:n_cycles", 0);
+    g_fs = (int)iniparser_getint(ini, "signal:sample_rate", 0);
+    g_f0 = (int)iniparser_getint(ini, "signal:nominal_freq", 0);
+    g_frame_rate = (int)iniparser_getint(ini, "synchrophasor:frame_rate", 0);
+    g_n_bins = (int)iniparser_getint(ini, "synchrophasor:number_of_dft_bins", 0);
+    g_P = (int)iniparser_getint(ini, "synchrophasor:ipdft_iterations", 0);
+    g_Q = (int)iniparser_getint(ini, "synchrophasor:iter_e_ipdft_iterations", 0);
+    g_interf_trig = (float_p)iniparser_getdouble(ini, "synchrophasor:interference_threshold", 0);
+    g_iter_eipdft_enabled = (bool_p)iniparser_getboolean(ini, "synchrophasor:iter_e_ipdft_enable", 0);
 
-    g_thresholds[0] = iniparser_getdouble(ini, "rocof:threshold_1", 0);
-    g_thresholds[1] = iniparser_getdouble(ini, "rocof:threshold_2", 0);
-    g_thresholds[2] = iniparser_getdouble(ini, "rocof:threshold_3", 0);
+    g_thresholds[0] = (float_p)iniparser_getdouble(ini, "rocof:threshold_1", 0);
+    g_thresholds[1] = (float_p)iniparser_getdouble(ini, "rocof:threshold_2", 0);
+    g_thresholds[2] = (float_p)iniparser_getdouble(ini, "rocof:threshold_3", 0);
 
-    g_low_pass_coeff[0] = iniparser_getdouble(ini, "rocof:low_pass_filter_1", 0);
-    g_low_pass_coeff[1] = iniparser_getdouble(ini, "rocof:low_pass_filter_2", 0);
-    g_low_pass_coeff[2] = iniparser_getdouble(ini, "rocof:low_pass_filter_3", 0);
+    g_low_pass_coeff[0] = (float_p)iniparser_getdouble(ini, "rocof:low_pass_filter_1", 0);
+    g_low_pass_coeff[1] = (float_p)iniparser_getdouble(ini, "rocof:low_pass_filter_2", 0);
+    g_low_pass_coeff[2] = (float_p)iniparser_getdouble(ini, "rocof:low_pass_filter_3", 0);
 
     iniparser_freedict(ini);
 
@@ -429,25 +429,25 @@ static int config_from_file(char* ini_file_name){
 }
 
 // performs the DFT of a real sampled signal
-static int dft_r(double* in_ptr, double complex* out_ptr , unsigned int out_len, unsigned int n_bins){
+static int pmue_fft_r(float_p* in_ptr, float_p complex_p* out_ptr , uint_p out_len, uint_p n_bins){
     // debug("dft------------------------\n");
-    unsigned int k,n;
+    uint_p k,n;
 
     for (k = 0 ; k < n_bins ; ++k)
     {
         out_ptr[k] = 0;
-        for (n=0 ; n<out_len ; ++n) out_ptr[k] += (in_ptr[n] * cexp(-I*((n * k * M_PI*2 / (double)out_len))));   
+        for (n=0 ; n<out_len ; ++n) out_ptr[k] += (in_ptr[n] * pmue_cexp(-I*((n * k * M_PI_p*2 / (float_p)out_len))));   
     }
     return 0;
 }
 
 // helps inizializing the hann coefficients
-static double hann(double* out_ptr, unsigned int out_len){
+static float_p hann(float_p* out_ptr, uint_p out_len){
     
-    double norm_fact =0;
-    unsigned int i=0;
+    float_p norm_fact =0;
+    uint_p i=0;
     for (i=0; i < out_len; i++){
- 	   out_ptr[i] = 0.5*(1-cos(2*M_PI*i/out_len));
+ 	   out_ptr[i] = 0.5*(1-pmue_cos(2*M_PI_p*i/out_len));
        norm_fact += out_ptr[i]; 
     }
     return norm_fact;
@@ -455,9 +455,9 @@ static double hann(double* out_ptr, unsigned int out_len){
 }
 
 // phasor and frequency estimation main functions
-static void pureTone(double complex* Xpure, phasor phasor){
+static void pureTone(float_p complex_p* Xpure, phasor phasor){
     debug("\n[pureTone] ===============================================\n");
-    unsigned int i;
+    uint_p i;
     for (i = 0; i < g_n_bins; i++)
     {
       Xpure[i] = wf(i, phasor.freq, phasor.amp, phasor.ph, g_df, g_win_len, g_norm_factor) + wf(i, -phasor.freq, phasor.amp, -phasor.ph, g_df, g_win_len, g_norm_factor);
@@ -469,32 +469,32 @@ static void pureTone(double complex* Xpure, phasor phasor){
 
 }
 
-static int ipDFT(double complex* Xdft, phasor* phasor){
+static int ipDFT(float_p complex_p* Xdft, phasor* phasor){
 
-    unsigned int j, k1, k2,k3;
-    double Xdft_mag[g_n_bins]; //magnitude of dft
+    uint_p j, k1, k2,k3;
+    float_p Xdft_mag[g_n_bins]; //magnitude of dft
 
     debug("\n[ipDFT] ===============================================\n");
     
     debug_bins(Xdft, g_n_bins, g_df, "DFT BINS IN ipDFT");
 
     for(j = 0; j < g_n_bins; j++){        
-        Xdft_mag[j] = cabs(Xdft[j]); 
+        Xdft_mag[j] = pmue_cabs(Xdft[j]); 
     }
 
     find3LargestIndx(Xdft_mag, g_n_bins, &k1, &k2, &k3);
 
     debug("[%s] k1: %d, k2: %d, k3: %d\n",__FUNCTION__, k1,k2,k3);
 
-    double delta_corr = 2*(Xdft_mag[k3]-Xdft_mag[k2])/(Xdft_mag[k2]+Xdft_mag[k3]+2*Xdft_mag[k1]);
+    float_p delta_corr = 2*(Xdft_mag[k3]-Xdft_mag[k2])/(Xdft_mag[k2]+Xdft_mag[k3]+2*Xdft_mag[k1]);
 
     debug("[%s] delta_corr: %lf\n",__FUNCTION__,delta_corr);
     phasor->freq = (k1+delta_corr)*g_df;
 
-    if(fabs(delta_corr) <= pow(10,-12)){
+    if(pmue_fabs(delta_corr) <= 10e-12){
 
         phasor->amp =  Xdft_mag[k1];  
-        phasor->ph = carg(Xdft[k1]);
+        phasor->ph = pmue_carg(Xdft[k1]);
 
         debug("[%s] freq: %.10lf, amp (not normalized): %.3lf, ph: %.3lf\n",__FUNCTION__, phasor->freq, phasor->amp, phasor->ph);
         debug("\n[END ipDFT] ===============================================\n\n");
@@ -502,8 +502,8 @@ static int ipDFT(double complex* Xdft, phasor* phasor){
         return 1; 
     }
     else{
-        phasor->amp = Xdft_mag[k1]*fabs((delta_corr*delta_corr-1)*(M_PI*delta_corr)/sin(M_PI*delta_corr)); 
-        phasor->ph = carg(Xdft[k1])-M_PI*delta_corr;
+        phasor->amp = Xdft_mag[k1]*pmue_fabs((delta_corr*delta_corr-1)*(M_PI_p*delta_corr)/pmue_sin(M_PI_p*delta_corr)); 
+        phasor->ph = pmue_carg(Xdft[k1])-M_PI_p*delta_corr;
     
         debug("[%s] freq: %.10lf, amp (not normalized): %.3lf, ph: %.3lf\n",__FUNCTION__, phasor->freq, phasor->amp, phasor->ph);
         debug("\n[END ipDFT] ===============================================\n\n");
@@ -512,17 +512,17 @@ static int ipDFT(double complex* Xdft, phasor* phasor){
     }
 }
 
-static void e_ipDFT(double complex* Xdft, phasor* out_phasor){
+static void e_ipDFT(float_p complex_p* Xdft, phasor* out_phasor){
 
     debug("\n[e_ipDFT] ===============================================\n");
 
     phasor phsr = *out_phasor;  
     
     if(!ipDFT(Xdft, &phsr)){        
-        unsigned int j, p;
+        uint_p j, p;
      
-        double complex X_neg;
-        double complex X_pos[g_n_bins];
+        float_p complex_p X_neg;
+        float_p complex_p X_pos[g_n_bins];
 
         for(p=0 ; p<g_P ; p++){ 
         
@@ -545,14 +545,14 @@ static void e_ipDFT(double complex* Xdft, phasor* out_phasor){
 
 }
 
-static void iter_e_ipDFT(complex* dftbins, complex* Xi, complex* Xf, phasor* f_phsr){
+static void iter_e_ipDFT(complex_p* dftbins, complex_p* Xi, complex_p* Xf, phasor* f_phsr){
             
         phasor f_phasor = *f_phsr;
         phasor i_phasor;
-        double complex Xi_pure[g_n_bins];
+        float_p complex_p Xi_pure[g_n_bins];
     
         debug("\n[iter-e-ipDFT] ###############################################\n");
-        unsigned int i,j;
+        uint_p i,j;
         for (i = 0; i < g_Q; i++)
         {   
             debug("\n[iter-e-ipDFT ITERATION: %d] ------------\n", i+1);
@@ -582,7 +582,7 @@ static void iter_e_ipDFT(complex* dftbins, complex* Xi, complex* Xf, phasor* f_p
         *f_phsr = f_phasor;
 }
 
-inline static void find3LargestIndx(double arr[], int size, unsigned int *km,unsigned int *kl,unsigned int *kr){
+inline static void find3LargestIndx(float_p arr[], int size, uint_p *km,uint_p *kl,uint_p *kr){
 
   int max_val = -2147483647.0f;
   int max_indx = -1;
@@ -607,7 +607,7 @@ inline static void find3LargestIndx(double arr[], int size, unsigned int *km,uns
 }
 
 // prints the bins and their index and frequency
-static void print_bins(complex *bins, int n_bins, double df, char* str){
+static void print_bins(complex_p *bins, int n_bins, float_p df, char* str){
 
     debug("\n--%s---------------  ---  --  -\n Indx", str);
     for(int i = 0; i < n_bins; i++){
@@ -619,7 +619,7 @@ static void print_bins(complex *bins, int n_bins, double df, char* str){
     }
     debug("|\n Bins");
     for(int i = 0; i < n_bins; i++){
-        debug("|%6.1f", cabs(bins[i]));
+        debug("|%6.1f", pmue_cabs(bins[i]));
     }
     debug("|\n---------------------------  ---  --  -\n\n");
 }

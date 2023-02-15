@@ -6,17 +6,17 @@
 int main() {
 
     // Input Signal parameters
-    double AMP = 2;
-    double PH = 1;
-    double FREQ = 50;
-    unsigned int sample_rate = 25600;
-    unsigned int window_size = 2048;
-    double dt = 1/(double)sample_rate;
+    float_p AMP = 2;
+    float_p PH = 1;
+    float_p FREQ = 50;
+    uint_p sample_rate = 25600;
+    uint_p window_size = 2048;
+    float_p dt = 1/(float_p)sample_rate;
 
-    double input_signal_window[window_size];
+    float_p input_signal_window[window_size];
 
     // Initializing input signal window
-    unsigned int i;
+    uint_p i;
     for(i=0; i<window_size; i++){
         input_signal_window[i] = AMP*cos(2*M_PI*FREQ*dt*i + PH);
     }
@@ -45,10 +45,10 @@ int main() {
     pmu_init(&pmu_config, CONFIG_FROM_STRUCT);
 
     pmu_frame estimated_frame;
-    double mid_window_fracsec = 0;
+    float_p mid_window_fracsec = 0;
 
     // Estimating frame
-    pmu_estimate((double *)input_signal_window, mid_window_fracsec , &estimated_frame);
+    pmu_estimate((float_p *)input_signal_window, mid_window_fracsec , &estimated_frame);
     
     // Printing estimated frame
     pmu_dump_frame(&estimated_frame, stdout);

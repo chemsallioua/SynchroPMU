@@ -73,6 +73,7 @@ cp config.ini ../build/config
 cp m_class_config.ini ../build/config
 cp p_class_config.ini ../build/config
 cp pmu_estimator.h ../build/headers
+cp func_stubs.h ../build/headers
 
 # remove the cmake_build folder
 cd ..
