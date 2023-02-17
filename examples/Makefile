@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -I ../libs/iniparser -I ../src
 LIBS = ../libs/iniparser/dictionary.c ../libs/iniparser/iniparser.c
-SRC = ../src/pmu_estimator.c
+SRC = ../src/pmu_estimator.c -lm
 
 SIMPLE_EXAMPLE_SRC = simple_example.c
 SIMPLE_EXAMPLE1_OUT = build/simple_example_out
