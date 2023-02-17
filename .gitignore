@@ -9,4 +9,9 @@ cmake_build
 simple_example.exe
 simple_example2.exe
 main.c
+examples/build/*
 examples/build
+test/*.out
+test/*.exe
+test/*.o
+test/*.txt

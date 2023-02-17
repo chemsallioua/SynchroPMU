@@ -63,6 +63,8 @@ or add the __-DNUM_CHANLS=4__ with the __cmake__:
 
     cmake -DNUM_CHANLS=4 ..
 
+__NOTE__: if you set the number of channels different from the dimention of the input signal array passed to the __pmu_estimate()__ function, you experience  ___Segmentation Error___.
+
 ## __Enabling Debug Logs__
 To compile the library with debug logs enabled, the __DEBUG__ directive must be defined. To do so, you can use the -D flag when running the ./build.sh command as follows:
 

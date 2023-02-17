@@ -22,7 +22,7 @@
 
 /*CONSTANTS ==================*/
 #ifndef NUM_CHANLS
-#define NUM_CHANLS 3
+#define NUM_CHANLS 1
 #endif
 
 /*MACROS ==================*/
