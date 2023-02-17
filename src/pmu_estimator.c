@@ -12,17 +12,17 @@
 
 ==============================================================================*/ 
 
-#include "pmu_estimator.h"
-
 #include <stdio.h>
 #include <complex.h>
 #include <math.h>
 #include <stdlib.h>
+
 #include "iniparser.h"
+#include "pmu_estimator.h"
 
 /*CONSTANTS ==================*/
 #ifndef NUM_CHANLS
-#define NUM_CHANLS 3
+#define NUM_CHANLS 1
 #endif
 
 /*MACROS ==================*/
@@ -197,7 +197,7 @@ int pmu_estimate(float_p *in_signal_windows, float_p mid_fracsec ,pmu_frame* out
             }
         }
 
-        debug("Energy of Signal Spectrum = %lf | Energy of Difference= %lf\n",E, E_diff);
+        debug("Energy of Signal Spectrum (multiplied by epsilon) = %lf | Energy of Difference= %lf\n",E*g_interf_trig, E_diff);
 
         // check if interference is present to trigger iterative enhanced interpolated DFT
         if(g_iter_eipdft_enabled){

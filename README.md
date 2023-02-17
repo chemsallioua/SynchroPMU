@@ -1,6 +1,6 @@
 # PMU Estimator
 An ANSI C implementation of the Phasor Measurment Unit Estimator (PMU Estimator) based on the Iterative Interpolated DFT Synchrophasor Estimation Algorithm.
-# Version 1.4.9
+# Version 1.5.0
 Updates (with respect to version 1.3.0):
 
 - Now the library supprots CMake Building!
@@ -14,6 +14,7 @@ Updates (with respect to version 1.3.0):
 - fixed bug in CmakeLists.txt that caused the library to raise an error when building with __NUM_CHANLS__ not set.
 - added library installation with cmake.
 - now it's easily possible to stub the arithmetic functions with user implementations.
+- added a test script and a Makefile to test the library with __gprof__.
 
 ## __Building the library__
 To build the library, first make sure that you have the following build tools are installed:
@@ -63,6 +64,8 @@ or add the __-DNUM_CHANLS=4__ with the __cmake__:
 
     cmake -DNUM_CHANLS=4 ..
 
+__NOTE__: if you set the number of channels different from the dimention of the input signal array passed to the __pmu_estimate()__ function, you experience  ___Segmentation Error___.
+
 ## __Enabling Debug Logs__
 To compile the library with debug logs enabled, the __DEBUG__ directive must be defined. To do so, you can use the -D flag when running the ./build.sh command as follows:
 
@@ -102,10 +105,29 @@ for the config structure:
 
 ## __Building and Running the examples__
 
-To run an example found in the __examples__ directory, you can build it by running the following command from the root directory of the project:
+To build an example found in the __examples__ directory, you can build it by running the following command from the __/examples__ directory of the project:
 
-    gcc -I ./libs/iniparser -I ./src ./libs/iniparser/dictionary.c ./libs/iniparser/iniparser.c ./examples/<name of the example c file> ./src/pmu_estimator.c -o <name of the example>
+    make <name of the example>
 
+or to build all examples simply run:
+
+    make
+
+the executable will be placed in the __/examples/build__ directory.
 then run the executable:
     
-        ./<name of the example>
+    ./build/<name of the example>
+
+## __Testing and Profiling__
+
+In the folder __test__ you can find a test script that can be used to test and profile library with __gprof__. To run the test script, first change the configuration of the pmu estimator in the __test.c__ file and also the number of test iterations for the __pmu_estimate()__ function by setting the __PERF_ITERATIONS__ directive constant, then run from the __/test__ directory:
+
+    make test
+
+this will build the test executable, now run:
+    
+    make profile
+
+this will run the test executable and generate a  __profile.txt__ which contain the profiling results. To clen the test directory run:
+
+    make clean
