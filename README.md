@@ -102,10 +102,15 @@ for the config structure:
 
 ## __Building and Running the examples__
 
-To run an example found in the __examples__ directory, you can build it by running the following command from the root directory of the project:
+To build an example found in the __examples__ directory, you can build it by running the following command from the __/examples__ directory of the project:
 
-    gcc -I ./libs/iniparser -I ./src ./libs/iniparser/dictionary.c ./libs/iniparser/iniparser.c ./examples/<name of the example c file> ./src/pmu_estimator.c -o <name of the example>
+    make <name of the example>
 
+or to build all examples simply run:
+
+    make
+
+the executable will be placed in the __/examples/build__ directory.
 then run the executable:
     
-        ./<name of the example>
+        ./build/<name of the example>
