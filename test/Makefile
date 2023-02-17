@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g -I../libs/iniparser -I../src 
+CFLAGS = -g -fPIC -Wall -Wextra -Werror -Wno-unused-variable -Wno-unused-parameter -Wno-unused-function -I../libs/iniparser -I../src  
 LIBS = ../libs/iniparser/dictionary.c ../libs/iniparser/iniparser.c ../src/pmu_estimator.c
 SRC = test.c
 TARGET = test
@@ -29,4 +29,4 @@ profile: $(TARGET)
 .PHONY: clean
 clean:
 	rm -f $(TARGET)$(EXE_EXT) gmon.out
-	
+
