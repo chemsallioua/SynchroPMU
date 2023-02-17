@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g -fPIC -Wall -Wextra -Werror -Wno-unused-variable -Wno-unused-parameter -Wno-unused-function -I../libs/iniparser -I../src  
+CFLAGS = -g -lm -Wno-unused-variable -Wno-unused-parameter -Wno-unused-function -I../libs/iniparser -I../src  
 LIBS = ../libs/iniparser/dictionary.c ../libs/iniparser/iniparser.c ../src/pmu_estimator.c
 SRC = test.c
 TARGET = test
