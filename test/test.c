@@ -47,7 +47,7 @@ int main() {
     pmu_frame estimated_frame[NUM_CHANNNELS];
     double signal_windows[NUM_CHANNNELS][(int)n];
 
-    printf("channels: %d, window_size: %u\n", NUM_CHANNNELS, (unsigned int)n);
+    //printf("channels: %d, window_size: %u\n", NUM_CHANNNELS, (unsigned int)n);
 
     //initializing windows
     for (chanl=0; chanl<NUM_CHANNNELS; chanl++){
@@ -83,7 +83,7 @@ int main() {
     for (i= 0; i<PERF_ITERATIONS; i++){
         start = clock();
 
-        pmu_estimate((double *)signal_windows, mid_fracsec ,estimated_frame);
+        pmu_estimate((double *)signal_windows, mid_fracsec ,estimated_frame)
 
         end = clock();
         avg_perf_time += (double)(end - start) / CLOCKS_PER_SEC;
