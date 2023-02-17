@@ -16,15 +16,15 @@ all: $(TARGET)
 $(TARGET): $(LIBS) $(SRC)
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 
-# .PHONY: profile
-# profile: $(TARGET)$(EXE_EXT)
-# 	./$(TARGET)$(EXE_EXT)
-# 	gprof $(TARGET)$(EXE_EXT) gmon.out > profile.txt
+.PHONY: profile
+profile: $(TARGET)$(EXE_EXT)
+	./$(TARGET)$(EXE_EXT)
+	gprof $(TARGET)$(EXE_EXT) gmon.out > profile.txt
 
 	
-profile: $(TARGET)
-	perf record -g ./$(TARGET)$(EXE_EXT)
-	perf report
+# profile: $(TARGET)
+# 	perf record -g ./$(TARGET)$(EXE_EXT)
+# 	perf report
 
 .PHONY: clean
 clean:
