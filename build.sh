@@ -39,9 +39,9 @@ cd cmake_build
 # run cmake and build the shared library
 if [ "${machine}"=="Linux" ]; then
   cmake .. -G "Unix Makefiles" $flags
-elif [ "${machine}"=="MinGw" ]; then
+elif [ "${machine}" == "MinGw" ]; then
   cmake .. -G "MinGW Makefiles" $flags
-elif [ "${machine}"=="Cygwin" ]; then
+elif [ "${machine}" == "Cygwin" ]; then
   cmake .. -G "Unix Makefiles" $flags
 fi
 
@@ -57,7 +57,7 @@ mkdir ../build
 mkdir ../build/config
 mkdir ../build/headers
 
-if [ "${machine}" == "Linux" ]; then
+if [ "${machine}"=="Linux" ]; then
   cp libpmu_estimator.a ../build
   cp libpmu_estimator.so ../build
 elif [ "${machine}" == "MinGw" ]; then
