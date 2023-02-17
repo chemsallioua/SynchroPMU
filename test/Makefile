@@ -29,3 +29,4 @@ profile: $(TARGET)
 .PHONY: clean
 clean:
 	rm -f $(TARGET)$(EXE_EXT) gmon.out
+	
