@@ -3,14 +3,14 @@
 
 unameOut="$(uname -s)"
 case "${unameOut}" in
-    Linux)     machine=Linux;;
+    Linux*)     machine=Linux;;
     CYGWIN*)    machine=Cygwin;;
     MINGW*)     machine=MinGw;;
     *)          machine="OTHER"
 esac
 echo Machine: ${machine}, Name: ${unameOut}
 
-if [ "$machine"=="OTHER" ]; then
+if [ "$machine" == "OTHER" ]; then
     echo "Unsupported platform"
     exit 1
 fi
