@@ -6,7 +6,7 @@
 #include "pmu_estimator.h"
 
 #define NUM_CHANNNELS 1
-#define PERF_ITERATIONS 100000
+#define PERF_ITERATIONS 10000000
 
 int main() {
 
