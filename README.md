@@ -1,6 +1,6 @@
 # PMU Estimator
 An ANSI C implementation of the Phasor Measurment Unit Estimator (PMU Estimator) based on the Iterative Interpolated DFT Synchrophasor Estimation Algorithm.
-# Version 1.4.9
+# Version 1.5.0
 Updates (with respect to version 1.3.0):
 
 - Now the library supprots CMake Building!
@@ -14,6 +14,7 @@ Updates (with respect to version 1.3.0):
 - fixed bug in CmakeLists.txt that caused the library to raise an error when building with __NUM_CHANLS__ not set.
 - added library installation with cmake.
 - now it's easily possible to stub the arithmetic functions with user implementations.
+- added a test script and a Makefile to test the library with __gprof__.
 
 ## __Building the library__
 To build the library, first make sure that you have the following build tools are installed:
@@ -115,4 +116,18 @@ or to build all examples simply run:
 the executable will be placed in the __/examples/build__ directory.
 then run the executable:
     
-        ./build/<name of the example>
+    ./build/<name of the example>
+
+## __Testing and Profiling__
+
+In the folder __test__ you can find a test script that can be used to test and profile library with __gprof__. To run the test script, first change the configuration of the pmu estimator in the __test.c__ file and also the number of test iterations for the __pmu_estimate()__ function by setting the __PERF_ITERATIONS__ directive constant, then run from the __/test__ directory:
+
+    make test
+
+this will build the test executable, now run:
+    
+    make profile
+
+this will run the test executable and generate a  __profile.txt__ which contain the profiling results. To clen the test directory run:
+
+    make clean

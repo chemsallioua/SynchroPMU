@@ -19,7 +19,7 @@ $(TARGET): $(LIBS) $(SRC)
 .PHONY: profile
 profile: $(TARGET)$(EXE_EXT)
 	./$(TARGET)$(EXE_EXT)
-	gprof -a $(TARGET)$(EXE_EXT) gmon.out > profile.txt
+	gprof -b $(TARGET)$(EXE_EXT) gmon.out > profile.txt
 
 .PHONY: clean
 clean:
