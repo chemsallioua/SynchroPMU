@@ -6,7 +6,7 @@
 #include "pmu_estimator.h"
 
 #define NUM_CHANNNELS 1
-#define PERF_ITERATIONS 10000000
+#define PERF_ITERATIONS 1000
 
 int main() {
 
@@ -23,17 +23,16 @@ int main() {
     unsigned int f0 = 50;
     unsigned int frame_rate = 50 ;
     double ki = 0.1;
-    double fi = 25;
+    double fi = 75;
     unsigned int n_cycles = 4;
     unsigned int fs = 25600;
-    unsigned int n_bins = 6;  
+    unsigned int n_bins = 11;  
     _Bool iter_eipdft = 1;  
     int P = 3;
-    int Q = 22;
+    int Q = 6;
     double epsilon = 0.0033;
     double th_coeff[3]= {3, 25, 0.035};
     double lpf_coeff[3]= {0.5913, 0.2043, 0.2043};
-
 
     double n = (double)n_cycles*fs/f0;
     double dt = 1/(double)fs;
@@ -84,8 +83,7 @@ int main() {
     for (i= 0; i<PERF_ITERATIONS; i++){
         start = clock();
 
-        //pmu_estimate((double *)signal_windows, mid_fracsec ,estimated_frame);
-        mid_fracsec = cos(i*f0);
+        pmu_estimate((double *)signal_windows, mid_fracsec ,estimated_frame);
 
         end = clock();
         avg_perf_time += (double)(end - start) / CLOCKS_PER_SEC;
