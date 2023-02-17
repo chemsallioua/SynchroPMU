@@ -6,7 +6,7 @@
 #include "pmu_estimator.h"
 
 #define NUM_CHANNNELS 1
-#define PERF_ITERATIONS 10000
+#define PERF_ITERATIONS 100000
 
 int main() {
 
@@ -23,7 +23,7 @@ int main() {
     unsigned int f0 = 50;
     unsigned int frame_rate = 50 ;
     double ki = 0.1;
-    double fi = 75;
+    double fi = 25;
     unsigned int n_cycles = 4;
     unsigned int fs = 25600;
     unsigned int n_bins = 6;  
@@ -51,7 +51,8 @@ int main() {
 
     //initializing windows
     for (chanl=0; chanl<NUM_CHANNNELS; chanl++){
-        amp[chanl] = AMP;
+        
+        amp[chanl] = cos(AMP);
         ph[chanl] = PH + chanl*2*M_PI/3;
         freq[chanl] = FREQ;
         for(j=0; j<n; j++){
