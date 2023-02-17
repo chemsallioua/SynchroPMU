@@ -22,7 +22,7 @@ int main() {
 
     unsigned int f0 = 50;
     unsigned int frame_rate = 50 ;
-    double ki = 0;
+    double ki = 0.1;
     double fi = 75;
     unsigned int n_cycles = 4;
     unsigned int fs = 25600;
