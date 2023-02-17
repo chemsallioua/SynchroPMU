@@ -52,7 +52,7 @@ int main() {
     //initializing windows
     for (chanl=0; chanl<NUM_CHANNNELS; chanl++){
         
-        amp[chanl] = cos(AMP);
+        amp[chanl] = AMP;
         ph[chanl] = PH + chanl*2*M_PI/3;
         freq[chanl] = FREQ;
         for(j=0; j<n; j++){
@@ -84,7 +84,8 @@ int main() {
     for (i= 0; i<PERF_ITERATIONS; i++){
         start = clock();
 
-        pmu_estimate((double *)signal_windows, mid_fracsec ,estimated_frame);
+        //pmu_estimate((double *)signal_windows, mid_fracsec ,estimated_frame);
+        mid_fracsec = cos(i*f0);
 
         end = clock();
         avg_perf_time += (double)(end - start) / CLOCKS_PER_SEC;
