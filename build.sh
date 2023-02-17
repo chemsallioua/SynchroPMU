@@ -10,7 +10,7 @@ case "${unameOut}" in
 esac
 echo Machine: ${machine}, Name: ${unameOut}
 
-if [ "$machine" == "OTHER" ]; then
+if [ "$machine"=="OTHER" ]; then
     echo "Unsupported platform"
     exit 1
 fi
@@ -37,11 +37,11 @@ mkdir cmake_build
 cd cmake_build
 
 # run cmake and build the shared library
-if [ "${machine}" == "Linux" ]; then
+if [ "${machine}"=="Linux" ]; then
   cmake .. -G "Unix Makefiles" $flags
-elif [ "${machine}" == "MinGw" ]; then
+elif [ "${machine}"=="MinGw" ]; then
   cmake .. -G "MinGW Makefiles" $flags
-elif [ "${machine}" == "Cygwin" ]; then
+elif [ "${machine}"=="Cygwin" ]; then
   cmake .. -G "Unix Makefiles" $flags
 fi
 
