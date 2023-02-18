@@ -5,19 +5,14 @@ project(PmuEstimator)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_FLAGS "-g -O3 -ansi -fPIC -Wall -Wextra -Werror -Wno-unused-variable -Wno-unused-parameter -Wno-unused-function")
 
-option(DEBUG "Build with debug logs" OFF)
 set(NUM_CHANLS 1 CACHE STRING "Number of channels")
+set(LOGGING_LEVEL 1 CACHE STRING "Logging Level (0=none, 1=error, 2=info, 3=debug)")
 
 message(STATUS "NUM_CHANLS=${NUM_CHANLS}")
 add_definitions(-DNUM_CHANLS=${NUM_CHANLS})
 
-if (DEBUG)
-    message(STATUS "DEBUG=1")
-    add_definitions(-DDEBUG=1)
-else ()
-    message(STATUS "DEBUG=0")
-    add_definitions(-DDEBUG=0)
-endif ()
+message(STATUS "LOGGING_LEVEL=${LOGGING_LEVEL}")
+add_definitions(-DLOGGING_LEVEL=${LOGGING_LEVEL})
 
 # Add source files
 set(PMUESTIMATOR_SRCS
