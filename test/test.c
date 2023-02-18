@@ -6,7 +6,7 @@
 #include "pmu_estimator.h"
 
 #define NUM_CHANNNELS 1
-#define PERF_ITERATIONS 10000
+#define PERF_ITERATIONS 11
 
 int main() {
 
@@ -30,7 +30,7 @@ int main() {
     unsigned int n_bins = 11;  
     _Bool iter_eipdft = 1;  
     int P = 3;
-    int Q = 6;
+    int Q = 10;
     double epsilon = 0.0033;
     double th_coeff[3]= {3, 25, 0.035};
     double lpf_coeff[3]= {0.5913, 0.2043, 0.2043};
@@ -102,7 +102,7 @@ int main() {
     printf("\n---- [Results]: -------------------------------------------------------------------------------------\n\n");
     printf("| Number of Itrations: %d \n", PERF_ITERATIONS);
     printf("| Total Estimation Time (ms): %.10lf \n", 1000*total_perf_time);
-    printf("| Avg Estimation Time per Call(ms): %.10lf \n", 1000*avg_perf_time);
+    printf("| Avg Estimation Time per Call (ms): %.10lf \n", 1000*avg_perf_time);
     for(j=0; j<NUM_CHANNNELS; j++){
         printf("| CHANNEL: %d |\tFREQ: %.10lf (Hertz) | AMP: %.5lf (Volt) | PH: %.10lf (deg) | ROCOF: %.10lf (Hz/s)\n",j, estimated_frame[j].synchrophasor.freq, estimated_frame[j].synchrophasor.amp, estimated_frame[j].synchrophasor.ph*(180/M_PI), estimated_frame[j].rocof);
     }
