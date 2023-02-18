@@ -20,16 +20,6 @@
 extern "C" {
 #endif
 
-//#define DEBUG 1
-
-#if DEBUG
-#define debug(...) printf(__VA_ARGS__)
-#define debug_bins(...) print_bins(__VA_ARGS__)
-#else
-#define debug(...)
-#define debug_bins(...)
-#endif
-
 #define CONFIG_FROM_INI 1
 #define CONFIG_FROM_STRUCT 0
 

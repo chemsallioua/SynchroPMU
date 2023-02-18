@@ -67,14 +67,23 @@ or add the __-DNUM_CHANLS=4__ with the __cmake__:
 
 __NOTE__: if you set the number of channels different from the dimention of the input signal array passed to the __pmu_estimate()__ function, you experience  ___Segmentation Error___.
 
-## __Enabling Debug Logs__
-To compile the library with debug logs enabled, the __DEBUG__ directive must be defined. To do so, you can use the -D flag when running the ./build.sh command as follows:
+## __Enabling Logging__
+To compile the library with logs enabled, the __LOGGING_LEVEL__ directive must be defined and set to a logging level. To do so, you can use the -D option foollowed by the logging level wanted, when running the ./build.sh. 
 
-    ./build.sh -D
+This are the available logging levels:
+    
+- __LOGGING_LEVEL = 0__ : No logging
+- __LOGGING_LEVEL = 1__ : Only errors
+- __LOGGING_LEVEL = 2__ : Errors and Info logs
+- __LOGGING_LEVEL = 3__ : Errors, Info and Debug logs (which include also each step taken by the algorithm and the various algorithm variable values)
 
-or add the __-DDEBUG=ON__ with the __cmake__:
+For example, to build with logging level 3, run:
 
-    cmake -DDEBUG=ON ..
+    ./build.sh -D 3
+
+or if you are building directly with __cmake__ add the __-DLOGGING_LEVEL=3__ option:
+
+    cmake -DLOGGING_LEVEL=3 ..
 
 ## __Stub Arithmetic functions__
 __func_stub.c__ is a header file that defines macros to stub out several data types and functions.

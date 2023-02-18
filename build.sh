@@ -15,11 +15,11 @@ if [ "$machine" == "OTHER" ]; then
     exit 1
 fi
 
-flags="-DDEBUG=OFF -DNUM_CHANLS=1"
-while getopts "DN:" opt; do
+flags="-DNUM_CHANLS=1"
+while getopts "D:N:" opt; do
   case $opt in
     D)
-      flags="-DDEBUG=ON ${flags}"
+      flags="${flags} -DLOGGING_LEVEL=$OPTARG"
       ;;
     N)
       flags="${flags} -DNUM_CHANLS=$OPTARG"
@@ -37,11 +37,12 @@ mkdir cmake_build
 cd cmake_build
 
 # run cmake and build the shared library
-if [ "${machine}"=="Linux" ]; then
-  cmake .. -G "Unix Makefiles" $flags
-elif [ "${machine}" == "MinGw" ]; then
+
+if [ "${machine}" == "MinGw" ]; then
   cmake .. -G "MinGW Makefiles" $flags
 elif [ "${machine}" == "Cygwin" ]; then
+  cmake .. -G "Unix Makefiles" $flags
+elif [ "${machine}"=="Linux" ]; then
   cmake .. -G "Unix Makefiles" $flags
 fi
 
@@ -57,15 +58,16 @@ mkdir ../build
 mkdir ../build/config
 mkdir ../build/headers
 
-if [ "${machine}"=="Linux" ]; then
-  cp libpmu_estimator.a ../build
-  cp libpmu_estimator.so ../build
-elif [ "${machine}" == "MinGw" ]; then
+
+if [ "${machine}" == "MinGw" ]; then
   cp libpmu_estimator.a ../build
   cp libpmu_estimator.dll ../build
 elif [ "${machine}" == "Cygwin" ]; then
   cp libpmu_estimator.a ../build
   cp libpmu_estimator.dll ../build
+elif [ "${machine}"=="Linux" ]; then
+  cp libpmu_estimator.a ../build
+  cp libpmu_estimator.so ../build
 fi
 
 cp config.ini ../build/config
