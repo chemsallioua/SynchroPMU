@@ -68,8 +68,9 @@ static bool_p g_pmu_initialized = 0;
 
 /*STATIC PROTOTYPES ====================*/
 
-// performs the DFT of a real sampled signal
-static int pmue_fft_r(float_p* in_ptr, float_p complex_p* out_ptr , uint_p out_len, uint_p n_bins);
+// The DFT implementations of a real sampled signal
+static int dft_r(float_p* in_ptr, float_p complex_p* out_ptr , uint_p out_len, uint_p n_bins);
+static int fft(float_p* in_ptr, float_p complex_p* out_ptr , uint_p out_len);
 
 // helps inizializing the hann coefficients
 static float_p hann(float_p* out_ptr, uint_p out_len);
@@ -78,7 +79,7 @@ static float_p hann(float_p* out_ptr, uint_p out_len);
 static void pureTone(float_p complex_p* Xpure, phasor phasor);
 static int ipDFT(float_p complex_p* Xdft, phasor* phasor);
 static void e_ipDFT(float_p complex_p* Xdft, phasor* out_phasor);
-static void iter_e_ipDFT(complex_p* dftbins, complex_p* Xi, complex_p* Xf, phasor* f_phsr);
+static void iter_e_ipDFT(float_p complex_p* dftbins,float_p complex_p* Xi,float_p complex_p* Xf, phasor* f_phsr);
 
 // phasor and frequency estimation helping functions
 inline static void find3LargestIndx(float_p arr[], int size, uint_p *km,uint_p *kl,uint_p *kr);
@@ -89,7 +90,7 @@ static int check_config_validity();
 static int config_from_file(char* ini_file_name);
 
 // prints the bins and their index and frequency
-static void print_bins(complex_p *bins, int n_bins, float_p df, char* str); 
+static void print_bins(float_p complex_p *bins, int n_bins, float_p df, char* str); 
 
 /*IMPLEMENTATION ====================*/
 
@@ -115,7 +116,7 @@ int pmu_init(void* cfg, bool_p config_from_ini){
     if (NULL == (g_Xi = malloc(g_n_bins*sizeof(float_p complex_p))  )){
 		fprintf(stderr,"[%s] ERROR: g_Xi memory allocation failed\n",__FUNCTION__);
 		return -1;}
-    if (NULL == (g_dftbins = malloc(g_n_bins*sizeof(float_p complex_p))  )){
+    if (NULL == (g_dftbins = malloc(g_win_len*sizeof(float_p complex_p))  )){
 		fprintf(stderr,"[%s] ERROR: g_Xi memory allocation failed\n",__FUNCTION__);
 		return -1;}
     if (NULL == (g_hann_window = malloc(g_win_len*sizeof(float_p))  )){
@@ -158,14 +159,13 @@ int pmu_estimate(float_p *in_signal_windows, float_p mid_fracsec ,pmu_frame* out
         return -1;
     }
 
-    //printf("channels: %d, window_size: %u\n", NUM_CHANLS, g_win_len);
-
     // input signal windowing
     uint_p j, chnl;
     for (chnl = 0; chnl < NUM_CHANLS; chnl++) {
-        //printf("--------------------------------\n");
+        //printf("CHANNEL: %u -----------------------\n", chnl);
         for(j=0; j<g_win_len; j++){
             g_signal_windows[chnl][j] = (*((in_signal_windows+chnl*g_win_len) + j))*g_hann_window[j];
+            //printf("[len:%u] signal[%d][%d]: %f\n",g_win_len,0,j,g_signal_windows[chnl][j]);
         }
     }
 
@@ -207,8 +207,8 @@ int pmu_estimate(float_p *in_signal_windows, float_p mid_fracsec ,pmu_frame* out
         }
 
         // two state rocof estimation
-        float_p rocof = (g_phasor.freq - g_freq_old[chnl])*(float)g_frame_rate;
-        float_p rocof_der = (rocof - g_delay_line[0][chnl])*(float)g_frame_rate;
+        float_p rocof = (g_phasor.freq - g_freq_old[chnl])*(float_p)g_frame_rate;
+        float_p rocof_der = (rocof - g_delay_line[0][chnl])*(float_p)g_frame_rate;
 
         // update state
         g_state[chnl] = (!g_state[chnl] && ( pmue_fabs(rocof) > g_thresholds[0] || pmue_fabs(rocof_der) > g_thresholds[1] )) ? 1 : g_state[chnl];
@@ -429,14 +429,54 @@ static int config_from_file(char* ini_file_name){
 }
 
 // performs the DFT of a real sampled signal
-static int pmue_fft_r(float_p* in_ptr, float_p complex_p* out_ptr , uint_p out_len, uint_p n_bins){
-    // debug("dft------------------------\n");
-    uint_p k,n;
+static int dft_r(float_p* in_ptr, float_p complex_p* out_ptr , uint_p out_len, uint_p n_bins){
+    
+    if(((out_len & (out_len - 1)) == 0))
+    {   
+        float_p g_fft_in[out_len];
+        memcpy(g_fft_in, in_ptr, out_len*sizeof(float_p));
+        fft(g_fft_in, out_ptr , out_len);
 
-    for (k = 0 ; k < n_bins ; ++k)
-    {
-        out_ptr[k] = 0;
-        for (n=0 ; n<out_len ; ++n) out_ptr[k] += (in_ptr[n] * pmue_cexp(-I*((n * k * M_PI_p*2 / (float_p)out_len))));   
+    }else{
+
+        uint_p k,n;
+
+        for (k = 0 ; k < n_bins ; ++k)
+        {
+            out_ptr[k] = 0;
+            for (n=0 ; n<out_len ; ++n) out_ptr[k] += (in_ptr[n] * pmue_cexp(-I*((n * k * M_PI_p*2 / (float_p)out_len))));   
+        }
+    }
+
+    return 0;
+}
+static int fft(float_p* in_ptr, float_p complex_p* out_ptr , uint_p out_len){
+        
+    uint_p half_len = out_len/2;
+    uint_p i,k;
+
+    if (out_len == 1) {
+        *out_ptr = in_ptr[0];
+    } else {
+        float_p even[half_len], odd[half_len];
+        float_p complex_p even_out[half_len], odd_out[half_len];
+
+        // Split input into even and odd indexed elements
+        for (i = 0; i < half_len; i++) {
+            even[i] = in_ptr[2*i];
+            odd[i] = in_ptr[2*i + 1];
+        }
+
+        // Compute FFT of even and odd indexed elements recursively
+        fft(even, even_out, half_len);
+        fft(odd, odd_out, half_len);
+
+        // Combine results from even and odd indexed elements
+        for (k = 0; k < half_len; k++) {
+            float_p complex_p t = pmue_cexp(-I * 2 * M_PI * k / out_len) * odd_out[k];
+            out_ptr[k] = even_out[k] + t;
+            out_ptr[k + half_len] = even_out[k] - t;
+        }
     }
     return 0;
 }
@@ -545,7 +585,7 @@ static void e_ipDFT(float_p complex_p* Xdft, phasor* out_phasor){
 
 }
 
-static void iter_e_ipDFT(complex_p* dftbins, complex_p* Xi, complex_p* Xf, phasor* f_phsr){
+static void iter_e_ipDFT(float_p complex_p* dftbins,float_p complex_p* Xi,float_p complex_p* Xf, phasor* f_phsr){
             
         phasor f_phasor = *f_phsr;
         phasor i_phasor;
@@ -607,7 +647,7 @@ inline static void find3LargestIndx(float_p arr[], int size, uint_p *km,uint_p *
 }
 
 // prints the bins and their index and frequency
-static void print_bins(complex_p *bins, int n_bins, float_p df, char* str){
+static void print_bins(float_p complex_p *bins, int n_bins, float_p df, char* str){
 
     debug("\n--%s---------------  ---  --  -\n Indx", str);
     for(int i = 0; i < n_bins; i++){

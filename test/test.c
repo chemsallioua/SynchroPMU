@@ -6,7 +6,7 @@
 #include "pmu_estimator.h"
 
 #define NUM_CHANNNELS 1
-#define PERF_ITERATIONS 1000
+#define PERF_ITERATIONS 11
 
 int main() {
 
@@ -15,6 +15,7 @@ int main() {
     //performance test
     clock_t start, end;  
     double avg_perf_time = 0;
+    double total_perf_time = 0;
 
     double AMP = 2;
     double PH = 0;
@@ -25,11 +26,11 @@ int main() {
     double ki = 0.1;
     double fi = 75;
     unsigned int n_cycles = 4;
-    unsigned int fs = 25600;
+    unsigned int fs = 512*50;
     unsigned int n_bins = 11;  
     _Bool iter_eipdft = 1;  
     int P = 3;
-    int Q = 6;
+    int Q = 10;
     double epsilon = 0.0033;
     double th_coeff[3]= {3, 25, 0.035};
     double lpf_coeff[3]= {0.5913, 0.2043, 0.2043};
@@ -44,9 +45,7 @@ int main() {
     double ph[NUM_CHANNNELS];
     double freq[NUM_CHANNNELS]; 
     pmu_frame estimated_frame[NUM_CHANNNELS];
-    double signal_windows[NUM_CHANNNELS][(int)n];
-
-    //printf("channels: %d, window_size: %u\n", NUM_CHANNNELS, (unsigned int)n);
+    float_p signal_windows[NUM_CHANNNELS][(int)n];
 
     //initializing windows
     for (chanl=0; chanl<NUM_CHANNNELS; chanl++){
@@ -58,6 +57,16 @@ int main() {
             signal_windows[chanl][j] = (amp[chanl]*cos(2*M_PI*freq[chanl]*dt*j + ph[chanl]) + amp[chanl]*ki*cos(2*M_PI*fi*dt*j + ph[chanl]));
         }
     }
+
+    printf("\n== PMU-Estimator ============================================================\n\n");
+    for(j=0; j<NUM_CHANNNELS; j++){
+       printf("[Channel:%d] Fundamental Component | Amp(V): %0.2lf | Ph(rad): %0.2lf | Freq(Hz): %0.2lf\n",j, amp[j], ph[j], freq[j]); 
+    }
+    printf("\nInterference | I-Mag(%%): %0.2lf | I-Freq(Hz): %0.2lf\n", ki*100, fi);
+    printf("------------------------------------------------------------------------------\n");
+    printf("Window | SamplingFreq(kS/s): %0.3lf | NCycles: %u | FreqResolution: %0.2lf\n", (float)fs/1000, n_cycles, df);
+    printf("Iterations | P: %d | Q: %d \n", P, Q);
+    printf("\n===============================================================================\n");
 
     pmu_config.n_cycles = n_cycles;
     pmu_config.f0 = f0;
@@ -83,16 +92,17 @@ int main() {
     for (i= 0; i<PERF_ITERATIONS; i++){
         start = clock();
 
-        pmu_estimate((double *)signal_windows, mid_fracsec ,estimated_frame);
+        pmu_estimate((float_p *)signal_windows, mid_fracsec ,estimated_frame);
 
         end = clock();
-        avg_perf_time += (double)(end - start) / CLOCKS_PER_SEC;
+        total_perf_time += (double)(end - start) / CLOCKS_PER_SEC;
     }
-    avg_perf_time = avg_perf_time/PERF_ITERATIONS;
+    avg_perf_time = total_perf_time/PERF_ITERATIONS;
 
     printf("\n---- [Results]: -------------------------------------------------------------------------------------\n\n");
     printf("| Number of Itrations: %d \n", PERF_ITERATIONS);
-    printf("| Total Estimation Time (seconds): %.10lf \n", avg_perf_time);
+    printf("| Total Estimation Time (ms): %.10lf \n", 1000*total_perf_time);
+    printf("| Avg Estimation Time per Call (ms): %.10lf \n", 1000*avg_perf_time);
     for(j=0; j<NUM_CHANNNELS; j++){
         printf("| CHANNEL: %d |\tFREQ: %.10lf (Hertz) | AMP: %.5lf (Volt) | PH: %.10lf (deg) | ROCOF: %.10lf (Hz/s)\n",j, estimated_frame[j].synchrophasor.freq, estimated_frame[j].synchrophasor.amp, estimated_frame[j].synchrophasor.ph*(180/M_PI), estimated_frame[j].rocof);
     }

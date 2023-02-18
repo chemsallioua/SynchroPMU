@@ -1,6 +1,6 @@
 # PMU Estimator
 An ANSI C implementation of the Phasor Measurment Unit Estimator (PMU Estimator) based on the Iterative Interpolated DFT Synchrophasor Estimation Algorithm.
-# Version 1.5.0
+# Version 1.5.1
 Updates (with respect to version 1.3.0):
 
 - Now the library supprots CMake Building!
@@ -15,6 +15,7 @@ Updates (with respect to version 1.3.0):
 - added library installation with cmake.
 - now it's easily possible to stub the arithmetic functions with user implementations.
 - added a test script and a Makefile to test the library with __gprof__.
+- optimized the FFT function to work faster when input window is power of 2, and also added the -03 flag to GCC for optimized compiling. 
 
 ## __Building the library__
 To build the library, first make sure that you have the following build tools are installed:
