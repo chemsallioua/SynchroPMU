@@ -22,10 +22,10 @@ int main() {
 
     unsigned int f0 = 50;
     unsigned int frame_rate = 50 ;
-    double ki = 0.1;
+    double ki = 0;
     double fi = 75;
     unsigned int n_cycles = 4;
-    unsigned int fs = 25600;
+    unsigned int fs = 512*50;
     unsigned int n_bins = 11;  
     _Bool iter_eipdft = 1;  
     int P = 3;
@@ -46,8 +46,6 @@ int main() {
     pmu_frame estimated_frame[NUM_CHANNNELS];
     double signal_windows[NUM_CHANNNELS][(int)n];
 
-    //printf("channels: %d, window_size: %u\n", NUM_CHANNNELS, (unsigned int)n);
-
     //initializing windows
     for (chanl=0; chanl<NUM_CHANNNELS; chanl++){
         
@@ -58,6 +56,16 @@ int main() {
             signal_windows[chanl][j] = (amp[chanl]*cos(2*M_PI*freq[chanl]*dt*j + ph[chanl]) + amp[chanl]*ki*cos(2*M_PI*fi*dt*j + ph[chanl]));
         }
     }
+
+    printf("\n== PMU-Estimator ============================================================\n\n");
+    for(j=0; j<NUM_CHANNNELS; j++){
+       printf("[Channel:%d] Fundamental Component | Amp(V): %0.2lf | Ph(rad): %0.2lf | Freq(Hz): %0.2lf\n",j, amp[j], ph[j], freq[j]); 
+    }
+    printf("\nInterference | I-Mag(%%): %0.2lf | I-Freq(Hz): %0.2lf\n", ki*100, fi);
+    printf("------------------------------------------------------------------------------\n");
+    printf("Window | SamplingFreq(kS/s): %0.3lf | NCycles: %u | FreqResolution: %0.2lf\n", (float)fs/1000, n_cycles, df);
+    printf("Iterations | P: %d | Q: %d \n", P, Q);
+    printf("\n===============================================================================\n");
 
     pmu_config.n_cycles = n_cycles;
     pmu_config.f0 = f0;

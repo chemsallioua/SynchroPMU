@@ -22,7 +22,7 @@ int main() {
     }
 
     // Initializing pmu estimator from config_example.ini
-    char file_name[] = "examples/config_example.ini";
+    char file_name[] = "config_example.ini";
     pmu_init(&file_name, CONFIG_FROM_INI);
 
     pmu_frame estimated_frame;
