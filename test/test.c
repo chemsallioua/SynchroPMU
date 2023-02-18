@@ -45,7 +45,7 @@ int main() {
     double ph[NUM_CHANNNELS];
     double freq[NUM_CHANNNELS]; 
     pmu_frame estimated_frame[NUM_CHANNNELS];
-    double signal_windows[NUM_CHANNNELS][(int)n];
+    float_p signal_windows[NUM_CHANNNELS][(int)n];
 
     //initializing windows
     for (chanl=0; chanl<NUM_CHANNNELS; chanl++){
