@@ -15,6 +15,7 @@ int main() {
     //performance test
     clock_t start, end;  
     double avg_perf_time = 0;
+    double total_perf_time = 0;
 
     double AMP = 2;
     double PH = 0;
@@ -94,13 +95,14 @@ int main() {
         pmu_estimate((double *)signal_windows, mid_fracsec ,estimated_frame);
 
         end = clock();
-        avg_perf_time += (double)(end - start) / CLOCKS_PER_SEC;
+        total_perf_time += (double)(end - start) / CLOCKS_PER_SEC;
     }
-    avg_perf_time = avg_perf_time/PERF_ITERATIONS;
+    avg_perf_time = total_perf_time/PERF_ITERATIONS;
 
     printf("\n---- [Results]: -------------------------------------------------------------------------------------\n\n");
     printf("| Number of Itrations: %d \n", PERF_ITERATIONS);
-    printf("| Total Estimation Time (ms): %.10lf \n", 1000*avg_perf_time);
+    printf("| Total Estimation Time (ms): %.10lf \n", 1000*total_perf_time);
+    printf("| Avg Estimation Time per Call(ms): %.10lf \n", 1000*avg_perf_time);
     for(j=0; j<NUM_CHANNNELS; j++){
         printf("| CHANNEL: %d |\tFREQ: %.10lf (Hertz) | AMP: %.5lf (Volt) | PH: %.10lf (deg) | ROCOF: %.10lf (Hz/s)\n",j, estimated_frame[j].synchrophasor.freq, estimated_frame[j].synchrophasor.amp, estimated_frame[j].synchrophasor.ph*(180/M_PI), estimated_frame[j].rocof);
     }
