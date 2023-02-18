@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -I ../libs/iniparser -I ../src
+CFLAGS = -O3 -I ../libs/iniparser -I ../src 
 LIBS = ../libs/iniparser/dictionary.c ../libs/iniparser/iniparser.c
 SRC = ../src/pmu_estimator.c 
 

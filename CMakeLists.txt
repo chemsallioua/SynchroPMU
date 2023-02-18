@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.0)
 project(PmuEstimator)
 
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_FLAGS "-g -ansi -fPIC -Wall -Wextra -Werror -Wno-unused-variable -Wno-unused-parameter -Wno-unused-function")
+set(CMAKE_C_FLAGS "-g -O3 -ansi -fPIC -Wall -Wextra -Werror -Wno-unused-variable -Wno-unused-parameter -Wno-unused-function")
 
 option(DEBUG "Build with debug logs" OFF)
 set(NUM_CHANLS 1 CACHE STRING "Number of channels")
