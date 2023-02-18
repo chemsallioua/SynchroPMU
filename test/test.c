@@ -92,7 +92,7 @@ int main() {
     for (i= 0; i<PERF_ITERATIONS; i++){
         start = clock();
 
-        pmu_estimate((double *)signal_windows, mid_fracsec ,estimated_frame);
+        pmu_estimate((float_p *)signal_windows, mid_fracsec ,estimated_frame);
 
         end = clock();
         total_perf_time += (double)(end - start) / CLOCKS_PER_SEC;

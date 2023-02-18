@@ -79,7 +79,7 @@ static float_p hann(float_p* out_ptr, uint_p out_len);
 static void pureTone(float_p complex_p* Xpure, phasor phasor);
 static int ipDFT(float_p complex_p* Xdft, phasor* phasor);
 static void e_ipDFT(float_p complex_p* Xdft, phasor* out_phasor);
-static void iter_e_ipDFT(complex_p* dftbins, complex_p* Xi, complex_p* Xf, phasor* f_phsr);
+static void iter_e_ipDFT(float_p complex_p* dftbins,float_p complex_p* Xi,float_p complex_p* Xf, phasor* f_phsr);
 
 // phasor and frequency estimation helping functions
 inline static void find3LargestIndx(float_p arr[], int size, uint_p *km,uint_p *kl,uint_p *kr);
@@ -90,7 +90,7 @@ static int check_config_validity();
 static int config_from_file(char* ini_file_name);
 
 // prints the bins and their index and frequency
-static void print_bins(complex_p *bins, int n_bins, float_p df, char* str); 
+static void print_bins(float_p complex_p *bins, int n_bins, float_p df, char* str); 
 
 /*IMPLEMENTATION ====================*/
 
@@ -459,7 +459,7 @@ static int fft(float_p* in_ptr, float_p complex_p* out_ptr , uint_p out_len){
         *out_ptr = in_ptr[0];
     } else {
         float_p even[half_len], odd[half_len];
-        complex_p even_out[half_len], odd_out[half_len];
+        float_p complex_p even_out[half_len], odd_out[half_len];
 
         // Split input into even and odd indexed elements
         for (i = 0; i < half_len; i++) {
@@ -473,7 +473,7 @@ static int fft(float_p* in_ptr, float_p complex_p* out_ptr , uint_p out_len){
 
         // Combine results from even and odd indexed elements
         for (k = 0; k < half_len; k++) {
-            complex_p t = pmue_cexp(-I * 2 * M_PI * k / out_len) * odd_out[k];
+            float_p complex_p t = pmue_cexp(-I * 2 * M_PI * k / out_len) * odd_out[k];
             out_ptr[k] = even_out[k] + t;
             out_ptr[k + half_len] = even_out[k] - t;
         }
@@ -585,7 +585,7 @@ static void e_ipDFT(float_p complex_p* Xdft, phasor* out_phasor){
 
 }
 
-static void iter_e_ipDFT(complex_p* dftbins, complex_p* Xi, complex_p* Xf, phasor* f_phsr){
+static void iter_e_ipDFT(float_p complex_p* dftbins,float_p complex_p* Xi,float_p complex_p* Xf, phasor* f_phsr){
             
         phasor f_phasor = *f_phsr;
         phasor i_phasor;
@@ -647,7 +647,7 @@ inline static void find3LargestIndx(float_p arr[], int size, uint_p *km,uint_p *
 }
 
 // prints the bins and their index and frequency
-static void print_bins(complex_p *bins, int n_bins, float_p df, char* str){
+static void print_bins(float_p complex_p *bins, int n_bins, float_p df, char* str){
 
     debug("\n--%s---------------  ---  --  -\n Indx", str);
     for(int i = 0; i < n_bins; i++){

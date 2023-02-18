@@ -32,7 +32,7 @@
 /* Define a macro to stub data types ==========================================*/
 
 /* Define a macro to stub out the float data type function */
-#define float_p double
+#define float_p float
 
 
 /* Define a macro to stub out the complex data type function */
