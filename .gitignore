@@ -15,3 +15,5 @@ test/*.out
 test/*.exe
 test/*.o
 test/*.txt
+test/test_flops.c
+test/test_mips.c
