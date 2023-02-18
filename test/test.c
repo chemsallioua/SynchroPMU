@@ -25,7 +25,7 @@ int main() {
     double ki = 0;
     double fi = 75;
     unsigned int n_cycles = 4;
-    unsigned int fs = 512*50;
+    unsigned int fs = 513*50;
     unsigned int n_bins = 11;  
     _Bool iter_eipdft = 1;  
     int P = 3;
