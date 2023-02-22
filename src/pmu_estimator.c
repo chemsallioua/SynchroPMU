@@ -652,28 +652,19 @@ static void iter_e_ipDFT(float_p complex_p* dftbins,float_p complex_p* Xi,float_
         *f_phsr = f_phasor;
 }
 
-inline static void find3LargestIndx(float_p arr[], int size, uint_p *km,uint_p *kl,uint_p *kr){
+inline static void find3LargestIndx(float arr[], int size, uint_p *km, uint_p *kl, uint_p *kr) {
+  int max_indx = 0;
 
-  int max_val = -2147483647.0f;
-  int max_indx = -1;
-  
-  for (int i = 0; i < size; i++) {
-    if (arr[i] > max_val) {
-      max_val = arr[i];
+  for (int i = 1; i < size; i++) {
+    if (arr[i] > arr[max_indx]) {
       max_indx = i;
     }
   }
 
-  if(max_indx == 0 || max_indx == size-1){
-    *km = max_indx;
-    *kl = max_indx;
-    *kr = max_indx;
-    return;
-  }
-  
   *km = max_indx;
-  *kl = max_indx-1;
-  *kr = max_indx+1;
+  *kl = (max_indx == 0) ? 0 : max_indx - 1;
+  *kr = (max_indx == size - 1) ? max_indx - 1 : max_indx + 1;
+
 }
 
 // prints the bins and their index and frequency
