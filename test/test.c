@@ -6,7 +6,7 @@
 #include "pmu_estimator.h"
 
 #define NUM_CHANNNELS 1
-#define PERF_ITERATIONS 11
+#define PERF_ITERATIONS 1000
 
 int main() {
 
@@ -30,7 +30,7 @@ int main() {
     unsigned int n_bins = 11;  
     _Bool iter_eipdft = 1;  
     int P = 3;
-    int Q = 10;
+    int Q = 22;
     double epsilon = 0.0033;
     double th_coeff[3]= {3, 25, 0.035};
     double lpf_coeff[3]= {0.5913, 0.2043, 0.2043};

@@ -55,10 +55,10 @@
 
 /*MACROS ==================*/
 
-#define D(k, N) (pmue_cexp(-I*M_PI_p*(k)*((N)-1)/(N))*pmue_sin(M_PI_p*(k))/pmue_sin(M_PI_p*(k)/(N)))
-#define whDFT(k, N) (-0.25*D((k-1),(N)) + 0.5*D((k),(N)) - 0.25*D((k+1),(N)))
-#define wf(k, f, ampl, phse, df, N, norm_factor) (ampl*pmue_cexp(I*phse)*whDFT((k)-((f)/(df)), N)/norm_factor)
 #define wrap_angle(rad) (((float_p)(rad) - 2 * M_PI_p * rint((float_p)(rad) / (2 * M_PI_p)))) // wraps angle (rad) in range [-pi; pi]
+#define sineasin(x) (pmue_sin(M_PI_p*(x))/pmue_sin(g_C4*M_PI_p*(x)))
+#define whDFT(x) (pmue_cexp(-I*M_PI_p*g_C3*(x))*(g_C5*sineasin((x)-1) + g_C1*sineasin((x)) + g_C6*sineasin((x)+1)))
+#define wf(k, f, in_phsr) ((in_phsr)*whDFT((k)-((f)/g_df))*(g_inv_norm_factor))
 
 /*GLOBAL VARIABLES ==================*/
 
@@ -83,6 +83,16 @@ static float_p complex_p* g_Xi;                    // interference frequency spe
 static float_p complex_p* g_dftbins;               // dft bins array ptr
 static float_p* g_hann_window;                     // hann coefficients array ptr
 static float_p* g_signal_windows[NUM_CHANLS];      // input signal windows pointer
+
+/*Hanning Fourier Transform calculation constants*/
+static float_p g_C0;
+static float_p g_C1;
+static float_p g_C2;
+static float_p g_C3;
+static float_p g_C4;
+static float_p complex_p g_C5;
+static float_p complex_p g_C6;
+static float_p g_inv_norm_factor;
 
 /*ROCOF estimation variables*/
 static float_p g_freq_old[NUM_CHANLS];           // represents f(n-1) and it is initialized to f0 Hz
@@ -167,6 +177,16 @@ int pmu_init(void* cfg, bool_p config_from_ini){
     
     // initialize the hann coefficients
     g_norm_factor = hann(g_hann_window, g_win_len);
+
+    // initialize Hanning FT calculation constants
+    g_C0 = -0.25;
+    g_C1 = 0.5;
+    g_C2 = -0.25;
+    g_C3 = ((float_p)g_win_len-1)/(float_p)g_win_len;
+    g_C4 = 1.0/(float_p)g_win_len;
+    g_C5 = g_C0*pmue_cexp(I*M_PI*g_C3);  
+    g_C6 = g_C2*pmue_cexp(-I*M_PI*g_C3);
+    g_inv_norm_factor = 1.0/g_norm_factor;
 
     // pmu estimator is initialized successfully
     g_pmu_initialized = 1;
@@ -528,9 +548,11 @@ static float_p hann(float_p* out_ptr, uint_p out_len){
 static void pureTone(float_p complex_p* Xpure, phasor phasor){
     debug("\n[pureTone] ===============================================\n");
     uint_p i;
+    float_p complex_p phsr_0 = phasor.amp*pmue_cexp(I*phasor.ph);
+    float_p complex_p phsr_1 = phasor.amp*pmue_cexp(-I*phasor.ph);
     for (i = 0; i < g_n_bins; i++)
     {
-      Xpure[i] = wf(i, phasor.freq, phasor.amp, phasor.ph, g_df, g_win_len, g_norm_factor) + wf(i, -phasor.freq, phasor.amp, -phasor.ph, g_df, g_win_len, g_norm_factor);
+      Xpure[i] = wf(i, phasor.freq, phsr_0) + wf(i, -phasor.freq, phsr_1);
     } 
 
     debug("freq: %0.3lf | ampl: %0.3lf | phse: %0.3lf\n", phasor.freq, phasor.amp, phasor.ph);
@@ -593,13 +615,16 @@ static void e_ipDFT(float_p complex_p* Xdft, phasor* out_phasor){
      
         float_p complex_p X_neg;
         float_p complex_p X_pos[g_n_bins];
+        float_p complex tmp_phsr;
 
         for(p=0 ; p<g_P ; p++){ 
         
             debug("\n[e_ipDFT ITERATION: %d] ------------\n", p+1);
 
+            tmp_phsr = phsr.amp*pmue_cexp(-I*phsr.ph);
+
             for(j = 0; j < g_n_bins; j++){ 
-                X_neg = wf(j,-phsr.freq, phsr.amp ,-phsr.ph, g_df, g_win_len, g_norm_factor);           
+                X_neg = wf(j,-phsr.freq, tmp_phsr);          
                 X_pos[j] = Xdft[j] - X_neg; 
             }
 
@@ -652,7 +677,7 @@ static void iter_e_ipDFT(float_p complex_p* dftbins,float_p complex_p* Xi,float_
         *f_phsr = f_phasor;
 }
 
-inline static void find3LargestIndx(float arr[], int size, uint_p *km, uint_p *kl, uint_p *kr) {
+inline static void find3LargestIndx(float_p arr[], int size, uint_p *km, uint_p *kl, uint_p *kr) {
   int max_indx = 0;
 
   for (int i = 1; i < size; i++) {
