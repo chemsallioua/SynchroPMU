@@ -17,3 +17,5 @@ test/*.o
 test/*.txt
 test/test_flops.c
 test/test_mips.c
+*__pycache__/
+*pmu_estimator.egg-info/
