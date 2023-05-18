@@ -1,4 +1,4 @@
-# PmuEstimator
+# __PmuEstimator__
 An ANSI C implementation of the Phasor Measurment Unit Estimator (PMU Estimator) based on the Iterative Interpolated DFT Synchrophasor Estimation Algorithm.
 # Version 1.5.3
 Updates (with respect to version 1.3.0):
@@ -143,3 +143,26 @@ this will build the test executable, now run:
 this will run the test executable and generate a  __profile.txt__ which contain the profiling results. To clen the test directory run:
 
     make clean
+
+# __Python API (v0.1.0)__
+
+The library also comes with a python API that can be used to call the __pmu_estimate()__ function from python. To use the API, first make sure that you have the following build tools are installed:
+
+- CMake (VERSION 3.0 or higher)
+- A C compiler, such as GCC
+- Make
+- Python3 (with ctypes)
+
+Make sure that you have already built the library using the __build.sh__ script or using __cmake__ and also installed it, specifically the dynamic library. (See __Building the library__ section for more details.)
+
+Now install the library from source by running the following command from the root directory of the project:
+
+    pip install ./python
+
+This will install the library as a python package. Now you can import the package and use it in your python code.
+
+## __Running the exaample__
+
+After installing the python package, you can run the example found in the __/python/examples__ directory by running the following command from the __/python/examples__ directory:
+
+    python3 example.py
