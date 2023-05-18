@@ -163,6 +163,6 @@ This will install the library as a python package. Now you can import the packag
 
 ## __Running the exaample__
 
-After installing the python package, you can run the example found in the __/python/examples__ directory by running the following command from the __/python/examples__ directory:
+After installing the python package, you can take a loot and run the example found in the __/python/examples__ directory by running the following command from the __/python/examples__ directory:
 
-    python3 example.py
+    python ./python/examples/example_usage.py
