@@ -1,8 +1,9 @@
 # __PmuEstimator__
 A __C implementation__ of the Phasor Measurment Unit Estimator (PMU Estimator) based on the Iterative Interpolated DFT Synchrophasor Estimation Algorithm.
-# Version 1.6.3
+# Version 1.6.4
 Updates (with respect to version 1.3.0):
 
+- Performance evaluation by means of __test2.c__ added to the __/test__ directory.
 - Python API now available (ver:1.6.3)! check in _/python_
 - updated the library license (BSD 3-clause) 
 - Now the library supprots CMake Building!
@@ -132,8 +133,9 @@ then run the executable:
     
     ./build/<name of the example>
 
-## __Testing and Profiling__
+## __Testing, Profiling and Performance Evaluation__
 
+### __Profiling with gprof__
 In the folder __test__ you can find a test script that can be used to test and profile library with __gprof__. To run the test script, first change the configuration of the pmu estimator in the __test.c__ file and also the number of test iterations for the __pmu_estimate()__ function by setting the __PERF_ITERATIONS__ directive constant, then run from the __/test__ directory:
 
     make test
@@ -142,9 +144,23 @@ this will build the test executable, now run:
     
     make profile
 
-this will run the test executable and generate a  __profile.txt__ which contain the profiling results. To clen the test directory run:
+this will run the test executable and generate a  __profile.txt__ which contain the profiling results. To clean the test directory run:
 
     make clean
+
+### __Performance Evaluation__
+In order to evaluate the computation time in other words the wall time for the excecution of the pmu_estimate() function, you can customize the file __test2.c__ in the __/test__ directory. In the file you can set the number of iterations for the __pmu_estimate()__ function by setting the __PERF_ITERATIONS__ directive constant and other parameters as well. Then run the following command from the __/test__ directory:
+
+    make test2
+
+this will build the test executable, now run:
+        
+    make benchmark
+
+this will run the test executable and generate a  __pmu_perf.csv__ which contain the results. To clean the test directory run:
+
+    make clean
+
 
 # __Python API (v0.1.0)__
 
