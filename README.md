@@ -1,4 +1,4 @@
-# __PmuEstimator__
+# __SynchroPMU__
 A __C implementation__ of the Phasor Measurment Unit Estimator (PMU Estimator) based on the Iterative Interpolated DFT Synchrophasor Estimation Algorithm.
 # Version 1.6.4
 Updates (with respect to version 1.3.0):
