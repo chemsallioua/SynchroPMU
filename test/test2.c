@@ -33,8 +33,6 @@ int main() {
     
     //performance test
     struct timespec start_ns, end_ns;
-    double total_perf_time_ns = 0;
-    double avg_perf_time_ns = 0;
 
     double AMP = 2;
     double PH = 0;
@@ -58,6 +56,9 @@ int main() {
     for (unsigned int fs=25600; fs <= MAX_FS; fs=fs*2){
 
         for (int n_cycles=2; n_cycles <= MAX_N_CYCLES; n_cycles=n_cycles*2){
+
+            double total_perf_time_ns = 0;
+            double avg_perf_time_ns = 0;
 
             for (int Q = 3 ; Q <= MAX_Q; Q = Q+10){
 
