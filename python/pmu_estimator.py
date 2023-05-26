@@ -96,6 +96,9 @@ class PMUEstimator:
 
     def __del__(self):
         return self.lib.pmu_deinit()
+    
+    def deinit(self):
+        return self.lib.pmu_deinit()
 
     def configure_from_ini(self, ini_file_path):
         return self.lib.pmu_init(ini_file_path, self.CONFIG_FROM_INI)
