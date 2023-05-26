@@ -60,24 +60,19 @@ class PMUEstimator:
 
         # If lib_path is not given, use default path for each OS
         if lib_path is None:
+            
+            plat = platform.system()
 
-            # Find the installed library
-            library_name = 'pmu_estimator'
-            lib_path = ctypes.util.find_library(library_name)
-
-            if lib_path is None:
-                plat = platform.system()
-
-                if plat == "Linux":
-                    lib_path = "/usr/local/lib/libpmu_estimator.so"
-                elif plat == "Darwin":
-                    lib_path = "/usr/local/lib/libpmu_estimator.dylib"
-                elif plat == "Windows":
-                    lib_path = "C:\Program Files (x86)\PmuEstimator\lib\libpmu_estimator.dll"
-                    if not os.path.exists(str(lib_path)):
-                        lib_path = "C:\Program Files\PmuEstimator\lib\libpmu_estimator.dll" 
-                else:
-                    raise ValueError(f"Unsupported platform: {plat}")
+            if plat == "Linux":
+                lib_path = "/usr/local/lib/libpmu_estimator.so"
+            elif plat == "Darwin":
+                lib_path = "/usr/local/lib/libpmu_estimator.dylib"
+            elif plat == "Windows":
+                lib_path = "C:\Program Files (x86)\PmuEstimator\lib\libpmu_estimator.dll"
+                if not os.path.exists(str(lib_path)):
+                    lib_path = "C:\Program Files\PmuEstimator\lib\libpmu_estimator.dll" 
+            else:
+                raise ValueError(f"Unsupported platform: {plat}")
             
 
         if not os.path.exists(str(lib_path)):
