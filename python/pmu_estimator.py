@@ -1,4 +1,4 @@
-from ctypes import CDLL, POINTER, c_bool, c_uint, Structure, byref, c_double
+from ctypes import CDLL, POINTER, c_bool, c_uint, Structure, byref, c_double, c_int
 import numpy as np
 import os
 import platform
@@ -86,20 +86,28 @@ class PMUEstimator:
         self.lib = CDLL(lib_path)
 
         self.lib.pmu_init.argtypes = [POINTER(EstimatorConfig), c_bool]
+        self.lib.pmu_init.restype = c_int
+
         self.lib.pmu_estimate.argtypes = [POINTER(c_double), c_double, POINTER(PmuFrame)]
+        self.lib.pmu_estimate.restype = c_int
+
         self.lib.pmu_deinit.argtypes = []
+        self.lib.pmu_deinit.restype = c_int
 
     def __del__(self):
-        self.lib.pmu_deinit()
+        return self.lib.pmu_deinit()
 
     def configure_from_ini(self, ini_file_path):
-        self.lib.pmu_init(ini_file_path, self.CONFIG_FROM_INI)
+        return self.lib.pmu_init(ini_file_path, self.CONFIG_FROM_INI)
 
     def configure_from_class(self, config):
-        self.lib.pmu_init(byref(config), self.CONFIG_FROM_STRUCT)
+        return self.lib.pmu_init(byref(config), self.CONFIG_FROM_STRUCT)
 
     def estimate(self, input_signal_window, mid_window_fracsec):
         frame = PmuFrame()
         input_signal = (c_double * len(input_signal_window))(*input_signal_window)
-        self.lib.pmu_estimate(input_signal, mid_window_fracsec , byref(frame))
-        return frame
+        result = self.lib.pmu_estimate(input_signal, mid_window_fracsec , byref(frame))
+        if result != 0:
+            return None
+        else:
+            return frame

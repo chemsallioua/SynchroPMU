@@ -33,13 +33,18 @@ if __name__ == "__main__":
     pmu = PMUEstimator()
 
     # Configuring pmu estimator from config struct
-    pmu.configure_from_class(pmu_config)
+    if(pmu.configure_from_class(pmu_config) != 0):
+        print("Error: Could not configure pmu estimator")
+        exit(1)
 
     # setting a mid window fracsec
     mid_window_fracsec = 0.0
 
-    # Estimating frame
+    # Estimating frame 
     estimated_frame = pmu.estimate(input_signal_window, mid_window_fracsec)
+    if estimated_frame is None:
+        print("Error: Could not estimate frame")
+        exit(1)
 
     # Printing estimated frame
     print(estimated_frame)
