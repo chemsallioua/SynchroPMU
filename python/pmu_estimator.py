@@ -110,7 +110,15 @@ class PMUEstimator:
         frame = PmuFrame()
         input_signal = (c_double * len(input_signal_window))(*input_signal_window)
         result = self.lib.pmu_estimate(input_signal, mid_window_fracsec , byref(frame))
+
+        framedict = {
+            "amp": frame.synchrophasor.amp,
+            "ph": frame.synchrophasor.ph,
+            "freq": frame.synchrophasor.freq,
+            "rocof": frame.rocof
+        }
+
         if result != 0:
             return None
         else:
-            return frame
+            return framedict
