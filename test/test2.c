@@ -34,6 +34,10 @@ int main() {
     //performance test
     struct timespec start_ns, end_ns;
 
+    struct timespec res;
+    clock_getres(CLOCK_REALTIME, &res);
+    printf("Clock Resolution: %ld nanoseconds\n", res.tv_nsec);
+
     double AMP = 2;
     double PH = 0;
     double FREQ = 51;
