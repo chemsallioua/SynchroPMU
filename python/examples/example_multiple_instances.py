@@ -1,20 +1,13 @@
 from pmu_estimator import PMUEstimator, EstimatorConfig
 import math
 
-if __name__ == "__main__":
-
-    # Input Signal parameters
-    AMP = 2.0
-    PH = 1.0
-    FREQ = 50.0
+def create_pmu_estimator(amp, ph, freq):
     sample_rate = 25600
     window_size = 2048
     dt = 1 / sample_rate
     
     # Generating input signal window
-    input_signal_window = [AMP * math.cos(2 * math.pi * FREQ * dt * i + PH) for i in range(window_size)]
-
-    print("[PMU ESTIMATOR] Initializing pmu estimator from config struct")
+    input_signal_window = [amp * math.cos(2 * math.pi * freq * dt * i + ph) for i in range(window_size)]
 
     # Initializing pmu estimator from config struct
     pmu_config = EstimatorConfig(
@@ -31,28 +24,35 @@ if __name__ == "__main__":
         iter_eipdft = True
     )
 
-    print("[PMU ESTIMATOR] Initializing pmu estimator object")
-
     # Initializing pmu estimator object
     pmu = PMUEstimator()
-
-    print("[PMU ESTIMATOR] Configuring pmu estimator from config struct")
 
     # Configuring pmu estimator from config struct
     if(pmu.configure_from_class(pmu_config) != 0):
         print("Error: Could not configure pmu estimator")
-        exit(1)
+        return None, None
 
     # setting a mid window fracsec
     mid_window_fracsec = 0.0
 
     # Estimating frame 
-    print("[PMU ESTIMATOR] Estimating frame")
-
     estimated_frame = pmu.estimate(input_signal_window, mid_window_fracsec)
     if estimated_frame is None:
         print("Error: Could not estimate frame")
-        exit(1)
+        return None, None
 
-    # Printing estimated frame
-    print(estimated_frame)
+    return pmu, estimated_frame
+
+if __name__ == "__main__":
+
+    # Create two PMU estimators with different signal parameters
+    pmu1, estimated_frame1 = create_pmu_estimator(2.0, 1.0, 50.0)
+    pmu2, estimated_frame2 = create_pmu_estimator(1.5, 0.5, 60.0)
+
+    # Printing estimated frames
+    if estimated_frame1 is not None:
+        print("Estimated frame from PMU 1:", estimated_frame1)
+    
+    if estimated_frame2 is not None:
+        print("Estimated frame from PMU 2:", estimated_frame2)
+    
