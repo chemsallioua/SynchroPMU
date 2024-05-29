@@ -1,8 +1,12 @@
 # __SynchroPMU__
 A __C implementation__ of the Phasor Measurment Unit Estimator (PMU Estimator) based on the Iterative Interpolated DFT Synchrophasor Estimation Algorithm.
-# Version 1.6.4
-Updates (with respect to version 1.3.0):
+# Version 1.7.0
+Updates (with respect to version 1.6.4):
 
+- Now it is possible to create independent instances of the pmu estimator which have their own configuration and state. This works both in the native C library and in the Python API.
+
+
+previous updates (with respect to version 1.3.0):
 - Performance evaluation by means of __test2.c__ added to the __/test__ directory.
 - Python API now available (ver:1.6.3)! check in _/python_
 - updated the library license (BSD 3-clause) 
@@ -162,7 +166,7 @@ this will run the test executable and generate a  __pmu_perf.csv__ which contain
     make clean
 
 
-# __Python API (v0.1.0)__
+# __Python API (v1.2.0)__
 
 The library also comes with a python API that can be used to call the __pmu_estimate()__ function from python. To use the API, first make sure that you have the following build tools are installed:
 
