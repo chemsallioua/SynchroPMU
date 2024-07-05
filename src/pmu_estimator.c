@@ -186,6 +186,7 @@ int pmu_estimate(pmu_context *ctx, float_p *in_signal_windows, float_p mid_fracs
         for (j = 0; j < ctx->synch_params.win_len; j++)
         {
             ctx->buff_params.signal_windows[chnl][j] = (*((in_signal_windows + chnl * ctx->synch_params.win_len) + j)) * ctx->buff_params.hann_window[j];
+            // info("in_signal_windows[%u][%u]§; %f\n", chnl, j, *((in_signal_windows + chnl * ctx->synch_params.win_len) + j));
         }
     }
 

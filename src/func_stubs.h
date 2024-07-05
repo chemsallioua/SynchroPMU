@@ -4,23 +4,26 @@
 /*==============================================================================
   @file func_stubs.h
 
-  Pmu estimator functions stubs. 
+  Pmu estimator functions stubs.
 
-  Authors: Chemseddine Allioua, Brahim Mazighi 
+  Authors: Chemseddine Allioua, Brahim Mazighi
 
   Copyright (c) 2023.
   All Rights Reserved.
   Confidential and Proprietary - University of Bologna.
- 
+
   This header file defines macros to stub out arithmetic functions and data types.
-  The macros replace the function name with acorresponding "pmue_" function that 
-  you define, allowing you to implement your own versions of these functions with 
-  the behavior that you want. You can also stub out a function using an external 
+  The macros replace the function name with acorresponding "pmue_" function that
+  you define, allowing you to implement your own versions of these functions with
+  the behavior that you want. You can also stub out a function using an external
   library function, if you include the necessary headers and link with the library.
- 
-==============================================================================*/ 
 
+==============================================================================*/
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 #include <math.h>
 #include <complex.h>
 
@@ -32,12 +35,10 @@
 /* Define a macro to stub data types ==========================================*/
 
 /* Define a macro to stub out the float data type function */
-#define float_p double
-
+#define float_p float
 
 /* Define a macro to stub out the complex data type function */
-#define complex_p complex
-
+#define complex_p _Complex
 
 /* Define a macro to stub out the complex data type function */
 #define uint_p unsigned int
@@ -45,30 +46,29 @@
 /* Define a macro to stub out the complex data type function */
 #define bool_p _Bool
 
+    /* Define a macro to stub function ==========================================*/
 
-/* Define a macro to stub function ==========================================*/
+    /* Define a macro to stub out the fft for real input function */
+    /*
+    #define pmue_fft_r(in_ptr, out_ptr, out_len, n_bins) my_fft((in_ptr), (out_ptr), (out_len), (n_bins))
 
-/* Define a macro to stub out the fft for real input function */
-/*
-#define pmue_fft_r(in_ptr, out_ptr, out_len, n_bins) my_fft((in_ptr), (out_ptr), (out_len), (n_bins))
-
-int_p my_fft(float_p* in_ptr, float_p complex_p* out_ptr , uint_p out_len, uint_p n_bins) {
-    //Your implementation of exp here
-}
-*/
+    int_p my_fft(float_p* in_ptr, float_p complex_p* out_ptr , uint_p out_len, uint_p n_bins) {
+        //Your implementation of exp here
+    }
+    */
 
 #ifndef pmue_fft_r
 #define pmue_fft_r(in_ptr, out_ptr, out_len, n_bins) dft_r(in_ptr, out_ptr, out_len, n_bins)
 #endif
 
-/* Define a macro to stub out the cabs for complex input */
-/*
-#define pmue_cabs(x) my_cabs(x)
+    /* Define a macro to stub out the cabs for complex input */
+    /*
+    #define pmue_cabs(x) my_cabs(x)
 
-float_p my_cabs(float_p complex_p x) {
-    //Your implementation of exp here
-}
-*/
+    float_p my_cabs(float_p complex_p x) {
+        //Your implementation of exp here
+    }
+    */
 
 #ifndef pmue_cabs
 #define pmue_cabs(x) cabs(x)
@@ -140,6 +140,10 @@ float_p my_cexp(complex_p x) {
 /* Define a macro to stub out the cexp function */
 #ifndef pmue_cexp
 #define pmue_cexp(x) cexp(x)
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif /* FUNC_STUBS_H */
