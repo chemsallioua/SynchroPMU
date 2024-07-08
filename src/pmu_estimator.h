@@ -22,7 +22,7 @@ extern "C"
 #endif
 
 #include <stdio.h>
-#include <func_stubs.h>
+#include "func_stubs.h"
 
 #define CONFIG_FROM_INI 1
 #define CONFIG_FROM_STRUCT 0
