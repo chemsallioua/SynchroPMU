@@ -10,8 +10,6 @@
   Confidential and Proprietary - University of Bologna.
 
 ==============================================================================*/
-#include <stdio.h>
-#include "func_stubs.h"
 
 #ifndef PMU_ESTIMATOR_H
 #define PMU_ESTIMATOR_H
@@ -22,6 +20,9 @@
 extern "C"
 {
 #endif
+
+#include <stdio.h>
+#include "func_stubs.h"
 
 #define CONFIG_FROM_INI 1
 #define CONFIG_FROM_STRUCT 0
