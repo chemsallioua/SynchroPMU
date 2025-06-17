@@ -119,12 +119,12 @@ int pmu_init(pmu_context *ctx, void *cfg, bool_p config_from_ini)
     }
     if (NULL == (ctx->buff_params.dftbins = malloc(ctx->synch_params.win_len * sizeof(float_p complex_p))))
     {
-        error("[%s] ERROR: ctx->buff_params.Xi memory allocation failed\n", __FUNCTION__);
+        error("[%s] ERROR: ctx->buff_params.dftbins memory allocation failed\n", __FUNCTION__);
         return -1;
     }
     if (NULL == (ctx->buff_params.hann_window = malloc(ctx->synch_params.win_len * sizeof(float_p))))
     {
-        error("[%s] ERROR: ctx->hann_params.win_len memory allocation failed\n", __FUNCTION__);
+        error("[%s] ERROR: ctx->buff_params.hann_window memory allocation failed\n", __FUNCTION__);
         return -1;
     }
     uint_p i;
