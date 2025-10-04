@@ -3,7 +3,14 @@ cmake_minimum_required(VERSION 3.0)
 project(PmuEstimator)
 
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_FLAGS "-g -O3 -ansi -fPIC -Wall -Wextra -Werror -Wno-unused-variable -Wno-unused-parameter -Wno-unused-function")
+
+# Add common compiler flags (toolchain-specific flags from CMAKE_C_FLAGS_INIT are preserved)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O3 -Wall -Wextra -Werror -Wno-unused-variable -Wno-unused-parameter -Wno-unused-function")
+
+# Add -ansi and -fPIC only for non-embedded targets (not for bare-metal ARM)
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "Generic")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ansi -fPIC")
+endif()
 
 set(NUM_CHANLS 1 CACHE STRING "Number of channels")
 set(LOGGING_LEVEL 1 CACHE STRING "Logging Level (0=none, 1=error, 2=info, 3=debug)")
