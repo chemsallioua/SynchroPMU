@@ -5,7 +5,8 @@ A __C implementation__ of the Phasor Measurment Unit Estimator (PMU Estimator) b
 
 **Comprehensive API documentation is available!** Browse the complete documentation in the [`Doxygen/`](Doxygen/) directory.
 
-- **[View Documentation](Doxygen/html/index.html)** - Full API reference with detailed descriptions
+- **[📖 Quick Documentation Guide](DOCUMENTATION.md)** - Start here for documentation overview
+- **[View Full API Documentation](Doxygen/html/index.html)** - Complete API reference with detailed descriptions
 - **Quick Links:**
   - [Data Structures](Doxygen/html/annotated.html) - All structs and types
   - [Functions](Doxygen/html/globals_func.html) - Complete function reference
