@@ -20,3 +20,6 @@ test/test_mips.c
 *__pycache__/
 *pmu_estimator.egg-info/
 test/*.csv
+
+# Doxygen generated files (keep Doxyfile and README, regenerate HTML as needed)
+Doxygen/html/
