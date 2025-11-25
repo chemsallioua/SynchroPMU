@@ -20,3 +20,4 @@ test/test_mips.c
 *__pycache__/
 *pmu_estimator.egg-info/
 test/*.csv
+/tools

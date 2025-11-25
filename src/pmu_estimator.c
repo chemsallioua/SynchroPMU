@@ -1,16 +1,36 @@
-/*==============================================================================
-  @file pmu_estimator.c
-
-  Source for the implementation of the pmu estimator based on the Iterative
-  Enhanced interpolated DFT Algorithm.
-
-  Authors: Chemseddine Allioua, Brahim Mazighi
-
-  Copyright (c) 2023.
-  All Rights Reserved.
-  Confidential and Proprietary - University of Bologna.
-
-==============================================================================*/
+/**
+ * @file pmu_estimator.c
+ * @brief Implementation of the PMU estimator based on the Iterative Enhanced Interpolated DFT Algorithm
+ * 
+ * This file contains the complete implementation of a Phasor Measurement Unit (PMU) estimator
+ * that uses advanced signal processing techniques to accurately estimate synchrophasors,
+ * frequency, and Rate of Change of Frequency (ROCOF) from power system signals.
+ * 
+ * @section algorithm Algorithm Overview
+ * 
+ * The implementation uses the Iterative Enhanced Interpolated DFT (Discrete Fourier Transform)
+ * algorithm with the following key features:
+ * 
+ * - **Hanning Window**: Applied to reduce spectral leakage
+ * - **Interpolated DFT (ipDFT)**: Improves frequency resolution beyond FFT bin spacing
+ * - **Enhanced ipDFT (e-ipDFT)**: Compensates for interference from nearby frequency components
+ * - **Iterative Refinement**: Multiple iterations improve accuracy under dynamic conditions
+ * - **ROCOF Estimation**: Calculates the rate of frequency change with low-pass filtering
+ * 
+ * @section features Key Features
+ * 
+ * - Multi-channel signal processing (configurable via NUM_CHANLS)
+ * - Configurable via INI file or structure
+ * - M-Class and P-Class PMU configurations supported
+ * - Optimized FFT for power-of-2 window sizes
+ * - Comprehensive logging system (ERROR, INFO, DEBUG levels)
+ * - Memory-efficient with dynamic allocation
+ * 
+ * @author Chemseddine Allioua, Brahim Mazighi
+ * @copyright Copyright (c) 2023. All Rights Reserved.
+ *            Confidential and Proprietary - University of Bologna.
+ * @version 1.7.0
+ */
 
 #include <stdio.h>
 #include <complex.h>
@@ -21,30 +41,37 @@
 #include "pmu_estimator.h"
 
 /*CONSTANTS ==================*/
+/** @brief Number of channels to process (can be defined at compile time) */
 #ifndef NUM_CHANLS
 #define NUM_CHANLS 1
 #endif
 
 /*LOGGING LEVEL ==============*/
+/** @brief Debug logging level - includes all messages */
 #define DEBUG 3
+/** @brief Info logging level - includes info and error messages */
 #define INFO 2
+/** @brief Error logging level - only error messages */
 #define ERROR 1
 
-// change logging level here (DEBUG, INFO, ERROR)
+/** @brief Current logging level (can be defined at compile time) */
 #ifndef LOGGING_LEVEL
 #define LOGGING_LEVEL ERROR
 #endif
 
+/** @brief Error logging macro - outputs to stderr */
 #if LOGGING_LEVEL >= ERROR
 #define error(...) fprintf(stderr, __VA_ARGS__)
 #else
 #define error(...)
 #endif
+/** @brief Info logging macro - outputs to stdout */
 #if LOGGING_LEVEL >= INFO
 #define info(...) fprintf(stdout, __VA_ARGS__)
 #else
 #define info(...)
 #endif
+/** @brief Debug logging macro - outputs to stdout */
 #if LOGGING_LEVEL >= DEBUG
 #define debug(...) fprintf(stdout, __VA_ARGS__)
 #define debug_bins(...) print_bins(__VA_ARGS__)
@@ -55,35 +82,120 @@
 
 /*MACROS ==================*/
 
-#define wrap_angle(rad) (((float_p)(rad) - 2 * M_PI_p * rint((float_p)(rad) / (2 * M_PI_p)))) // wraps angle (rad) in range [-pi; pi]
+/** @brief Wraps an angle to the range [-π, π] radians */
+#define wrap_angle(rad) (((float_p)(rad) - 2 * M_PI_p * rint((float_p)(rad) / (2 * M_PI_p))))
+/** @brief Sine-over-sine ratio used in Hanning window DFT */
 #define sineasin(x) (pmue_sin(M_PI_p * (x)) / pmue_sin(ctx->hann_params.C4 * M_PI_p * (x)))
+/** @brief Hanning window DFT formula */
 #define whDFT(x) (pmue_cexp(-I * M_PI_p * ctx->hann_params.C3 * (x)) * (ctx->hann_params.C5 * sineasin((x) - 1) + ctx->hann_params.C1 * sineasin((x)) + ctx->hann_params.C6 * sineasin((x) + 1)))
+/** @brief Weighted frequency bin calculation */
 #define wf(k, f, in_phsr) ((in_phsr) * whDFT((k) - ((f) / ctx->synch_params.df)) * (ctx->hann_params.inv_norm_factor))
 
 /*STATIC PROTOTYPES ====================*/
 
-// The DFT implementations of a real sampled signal
+/**
+ * @brief DFT implementation for real-valued input signal
+ * @param in_ptr Input array of real samples
+ * @param out_ptr Output array of complex DFT bins
+ * @param out_len Number of output bins
+ * @param n_bins Number of bins to compute
+ * @return 0 on success, -1 on error
+ */
 static int dft_r(float_p *in_ptr, float_p complex_p *out_ptr, uint_p out_len, uint_p n_bins);
+
+/**
+ * @brief FFT implementation for real-valued input
+ * @param in_ptr Input array of real samples
+ * @param out_ptr Output array of complex FFT bins
+ * @param out_len Length of input array
+ * @return 0 on success, -1 on error
+ */
 static int fft(float_p *in_ptr, float_p complex_p *out_ptr, uint_p out_len);
 
-// helps inizializing the hann coefficients
+/**
+ * @brief Generate Hanning window coefficients
+ * @param out_ptr Output array for window coefficients
+ * @param out_len Length of window
+ * @return Normalization factor for the window
+ */
 static float_p hann(float_p *out_ptr, uint_p out_len);
 
-// phasor and frequency estimation main functions
+/**
+ * @brief Generate ideal DFT for a pure tone phasor
+ * @param ctx PMU context
+ * @param Xpure Output complex DFT
+ * @param phasor Input phasor parameters
+ */
 static void pureTone(pmu_context *ctx, float_p complex_p *Xpure, phasor phasor);
+
+/**
+ * @brief Interpolated DFT algorithm for phasor estimation
+ * @param ctx PMU context
+ * @param Xdft Input DFT bins
+ * @param phasor Output phasor estimate
+ * @return 0 on success, -1 on error
+ */
 static int ipDFT(pmu_context *ctx, float_p complex_p *Xdft, phasor *phasor);
+
+/**
+ * @brief Enhanced Interpolated DFT with interference compensation
+ * @param ctx PMU context
+ * @param Xdft Input DFT bins
+ * @param out_phasor Output enhanced phasor estimate
+ */
 static void e_ipDFT(pmu_context *ctx, float_p complex_p *Xdft, phasor *out_phasor);
+
+/**
+ * @brief Iterative Enhanced Interpolated DFT
+ * @param ctx PMU context
+ * @param dftbins DFT bins from signal
+ * @param Xi Intermediate DFT buffer
+ * @param Xf Final DFT buffer
+ * @param f_phsr Final phasor estimate
+ */
 static void iter_e_ipDFT(pmu_context *ctx, float_p complex_p *dftbins, float_p complex_p *Xi, float_p complex_p *Xf, phasor *f_phsr);
 
-// phasor and frequency estimation helping functions
+/**
+ * @brief Find indices of three largest magnitude values in array
+ * @param arr Input array
+ * @param size Array size
+ * @param km Output: index of maximum
+ * @param kl Output: index of left neighbor
+ * @param kr Output: index of right neighbor
+ */
 inline static void find3LargestIndx(float_p arr[], int size, uint_p *km, uint_p *kl, uint_p *kr);
 
-// pmu estimator configuration functions
+/**
+ * @brief Configure the PMU estimator from file or structure
+ * @param ctx PMU context
+ * @param cfg Configuration (filename or structure pointer)
+ * @param config_from_ini True if cfg is filename, false if structure
+ * @return 0 on success, -1 on error
+ */
 static int config_estimator(pmu_context *ctx, void *cfg, bool_p config_from_ini);
+
+/**
+ * @brief Validate configuration parameters
+ * @param ctx PMU context with configuration to check
+ * @return 0 if valid, -1 if invalid
+ */
 static int check_config_validity(pmu_context *ctx);
+
+/**
+ * @brief Load configuration from INI file
+ * @param ctx PMU context
+ * @param ini_file_name Path to INI file
+ * @return 0 on success, -1 on error
+ */
 static int config_from_file(pmu_context *ctx, char *ini_file_name);
 
-// prints the bins and their index and frequency
+/**
+ * @brief Print DFT bins for debugging
+ * @param bins Array of complex DFT bins
+ * @param n_bins Number of bins
+ * @param df Frequency resolution
+ * @param str Description string
+ */
 static void print_bins(float_p complex_p *bins, int n_bins, float_p df, char *str);
 
 /*IMPLEMENTATION ====================*/
