@@ -8,9 +8,9 @@ A __C implementation__ of the Phasor Measurment Unit Estimator (PMU Estimator) b
 - **[📖 Quick Documentation Guide](DOCUMENTATION.md)** - Start here for documentation overview
 - **[View Full API Documentation](https://chemsallioua.github.io/SynchroPMU/)** - Complete API reference with detailed descriptions
 - **Quick Links:**
-  - [Data Structures](annotated.html) - All structs and types
-  - [Functions](globals_func.html) - Complete function reference
-  - [Files](files.html) - Source file documentation
+  - [Data Structures](https://chemsallioua.github.io/SynchroPMU/annotated.html) - All structs and types
+  - [Functions](https://chemsallioua.github.io/SynchroPMU/globals_func.html) - Complete function reference
+  - [Files](https://chemsallioua.github.io/SynchroPMU/files.html) - Source file documentation
 
 To regenerate documentation after code changes:
 ```bash
