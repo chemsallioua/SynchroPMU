@@ -82,6 +82,68 @@ the libraries will be placed in the __/build__.
 use the following command to install the library from the __/build__ directory:
 
     cmake --install .
+
+### __Cross-Compilation for ARM Architectures__
+
+The library supports cross-compilation for various ARM platforms including Raspberry Pi and STM32 microcontrollers. Pre-configured CMake toolchain files are provided in the __cmake/toolchains/__ directory.
+
+#### __Available Toolchain Files__
+
+1. __arm-linux-gnueabihf.cmake__: For 32-bit ARM Linux (Raspberry Pi 2/3/4 with 32-bit OS, BeagleBone)
+2. __aarch64-linux-gnu.cmake__: For 64-bit ARM Linux (Raspberry Pi 3/4/5 with 64-bit OS, NVIDIA Jetson)
+3. __arm-none-eabi.cmake__: For bare-metal ARM Cortex-M (STM32, Nordic nRF)
+
+#### __Cross-Compiling with build.sh__
+
+Use the `-T` option to specify a toolchain file:
+
+    ./build.sh -T cmake/toolchains/arm-linux-gnueabihf.cmake
+
+For Raspberry Pi (64-bit):
+
+    ./build.sh -T cmake/toolchains/aarch64-linux-gnu.cmake
+
+For STM32 (Cortex-M4):
+
+    ./build.sh -T cmake/toolchains/arm-none-eabi.cmake
+
+You can combine with other options:
+
+    ./build.sh -N 4 -D 2 -T cmake/toolchains/arm-linux-gnueabihf.cmake
+
+#### __Cross-Compiling with CMake__
+
+Alternatively, use CMake directly:
+
+    mkdir build
+    cd build
+    cmake -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/arm-linux-gnueabihf.cmake ..
+    make PmuEstimatorStatic
+    make PmuEstimatorShared
+
+For STM32 targets, specify the Cortex-M type:
+
+    cmake -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/arm-none-eabi.cmake \
+          -DCORTEX_TYPE=M4 ..
+
+Available CORTEX_TYPE values: M0, M0PLUS, M3, M4, M7, M33
+
+#### __Prerequisites for Cross-Compilation__
+
+You need to install the appropriate cross-compiler toolchain:
+
+For ARM Linux (32-bit):
+
+    sudo apt-get install gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
+
+For ARM64 Linux:
+
+    sudo apt-get install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+
+For bare-metal ARM (STM32):
+
+    sudo apt-get install gcc-arm-none-eabi
+
 ## __Setting Number of Channels__
 To set number of channels on which the pmu estimator will process with frames, __NUM_CHANLS__ directive must be defined. The default value is __NUM_CHANLS = 1__. To set the value, you can use the -N option when running the ./build.sh command.for example, to set the number of channels to 4:
 

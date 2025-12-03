@@ -16,7 +16,8 @@ fi
 
 flags="-DNUM_CHANLS=1"
 num_chanls=1
-while getopts "D:N:" opt; do
+toolchain_file=""
+while getopts "D:N:T:" opt; do
   case $opt in
     D)
       flags="${flags} -DLOGGING_LEVEL=$OPTARG"
@@ -24,6 +25,9 @@ while getopts "D:N:" opt; do
     N)
       flags="${flags} -DNUM_CHANLS=$OPTARG"
       num_chanls=$OPTARG
+      ;;
+    T)
+      toolchain_file="$OPTARG"
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -36,6 +40,12 @@ done
 rm -rf cmake_build
 mkdir cmake_build
 cd cmake_build
+
+# Add toolchain file if specified
+if [ -n "$toolchain_file" ]; then
+  flags="${flags} -DCMAKE_TOOLCHAIN_FILE=$toolchain_file"
+  echo "Using toolchain file: $toolchain_file"
+fi
 
 # run cmake and build the shared library
 if [ "${machine}" == "MinGw" ]; then
