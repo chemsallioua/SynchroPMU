@@ -52,7 +52,7 @@ On every pull request and push to main branches:
    - Verifies successful installation
 
 2. **Python Unit Tests**
-   - Runs on Python 3.7, 3.8, 3.9, 3.10, and 3.11
+   - Runs on Python 3.8, 3.9, 3.10, 3.11, and 3.12
    - Installs all dependencies
    - Executes full test suite
    - Runs example scripts

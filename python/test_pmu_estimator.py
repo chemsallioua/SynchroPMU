@@ -7,8 +7,6 @@ including configuration, estimation, and error handling.
 
 import unittest
 import math
-import os
-import tempfile
 from pmu_estimator import PMUEstimator, EstimatorConfig, PmuFrame
 
 
@@ -161,11 +159,15 @@ class TestPMUEstimator(unittest.TestCase):
         if not self.library_available:
             return
         
-        # Skip this test - the C library's INI parser (iniparser) has issues with
-        # temporary files and can cause division by zero errors when reading malformed
-        # or incomplete INI data. This is a known limitation of the underlying C library.
-        # To test INI configuration, use the actual config files from the repository.
-        self.skipTest("INI configuration test skipped - use config file from repository")
+        # Test with actual config file from repository
+        import os
+        config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'config.ini')
+        
+        if not os.path.exists(config_path):
+            self.skipTest(f"Config file not found at {config_path}")
+        
+        result = self.pmu.configure_from_ini(config_path)
+        self.assertEqual(result, 0, "INI configuration should succeed with repository config file")
 
     def test_estimate_known_signal_50hz(self):
         """Test estimation with a known 50Hz sinusoidal signal."""
@@ -440,8 +442,16 @@ class TestMultipleInstances(unittest.TestCase):
             self.assertAlmostEqual(result2['freq'], 60.0, delta=0.2,
                                   msg="Second instance should estimate 60Hz")
         finally:
-            pmu1.deinit()
-            pmu2.deinit()
+            try:
+                pmu1.deinit()
+            except Exception:
+                # Ignore exceptions during cleanup
+                pass
+            try:
+                pmu2.deinit()
+            except Exception:
+                # Ignore exceptions during cleanup
+                pass
 
 
 class TestEdgeCases(unittest.TestCase):
@@ -461,7 +471,8 @@ class TestEdgeCases(unittest.TestCase):
         if self.library_available and hasattr(self, 'pmu'):
             try:
                 self.pmu.deinit()
-            except:
+            except Exception:
+                # Ignore exceptions during cleanup to avoid masking test results
                 pass
 
     def test_estimate_without_configuration(self):
@@ -496,14 +507,16 @@ class TestEdgeCases(unittest.TestCase):
         
         self.pmu.configure_from_class(config)
         
-        # Use wrong window size (should be 2048)
+        # Use wrong window size (should be 2048 for this config)
         wrong_signal = [1.0] * 1000
         
-        # This might cause an error or return None depending on C library implementation
+        # The C library may return garbage values or None depending on implementation
+        # We just verify it doesn't crash
         try:
             result = self.pmu.estimate(wrong_signal, 0.0)
-            # If it doesn't crash, that's acceptable
-        except (ValueError, TypeError, OSError) as e:
+            # If it returns a result, it's likely garbage but that's acceptable
+            # as long as it doesn't crash
+        except (ValueError, TypeError, OSError):
             # If it raises a specific exception, that's also acceptable
             pass
 

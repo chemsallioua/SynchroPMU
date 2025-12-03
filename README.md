@@ -241,7 +241,7 @@ The test suite includes:
 This repository uses GitHub Actions for automated testing. Every pull request triggers:
 - Building the C library
 - Installing dependencies
-- Running all unit tests on multiple Python versions (3.7-3.11)
+- Running all unit tests on multiple Python versions (3.8-3.12)
 - Running C library performance benchmarks
 
 The CI/CD pipeline ensures all tests pass before merging changes.

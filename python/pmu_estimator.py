@@ -11,6 +11,12 @@ This module provides a Pythonic interface to the C library, allowing users to:
 - Estimate synchrophasors, frequency, and ROCOF from signal samples
 - Manage multiple independent PMU instances
 
+**Type Compatibility Note:**
+The C library uses `float_p` which can be stubbed to either `float` or `double`.
+The default build uses `float`, so this Python wrapper uses `c_float`.
+If you rebuild the C library with `float_p` stubbed to `double`, change all
+`c_float` references to `c_double` in this file for proper type alignment.
+
 Example:
     Basic usage with configuration from structure::
 
@@ -41,7 +47,7 @@ Copyright:
     Confidential and Proprietary - University of Bologna.
 """
 
-from ctypes import CDLL, POINTER, c_bool, c_uint, Structure, byref, c_double, c_int, c_void_p, c_char_p, c_float
+from ctypes import CDLL, POINTER, c_bool, c_uint, Structure, byref, c_int, c_void_p, c_char_p, c_float
 import numpy as np
 import os
 import platform
