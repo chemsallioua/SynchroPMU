@@ -162,6 +162,9 @@ class EstimatorConfig(Structure):
         rocof_thresh (array): ROCOF thresholds for different conditions (3 values)
         rocof_low_pass_coeffs (array): Low-pass filter coefficients for ROCOF (3 values)
     """
+    # Constants for array sizes
+    ROCOF_ARRAY_SIZE = 3
+    
     _fields_ = [("n_cycles", c_uint),
                 ("f0", c_uint),
                 ("frame_rate", c_uint),
@@ -171,8 +174,8 @@ class EstimatorConfig(Structure):
                 ("Q", c_uint),
                 ("iter_eipdft", c_bool),
                 ("interf_trig", c_float),
-                ("rocof_thresh", c_float * 3),
-                ("rocof_low_pass_coeffs", c_float * 3)]
+                ("rocof_thresh", c_float * ROCOF_ARRAY_SIZE),
+                ("rocof_low_pass_coeffs", c_float * ROCOF_ARRAY_SIZE)]
 
     def __init__(self, n_cycles, f0, frame_rate, fs, n_bins, P, Q, interf_trig, rocof_thresh, rocof_low_pass_coeffs, iter_eipdft = False):
         """
@@ -200,9 +203,9 @@ class EstimatorConfig(Structure):
         self.Q = Q
         self.iter_eipdft = iter_eipdft
         self.interf_trig = interf_trig
-        for i in range(3):
+        for i in range(self.ROCOF_ARRAY_SIZE):
             self.rocof_thresh[i] = rocof_thresh[i]
-        for i in range(3):
+        for i in range(self.ROCOF_ARRAY_SIZE):
             self.rocof_low_pass_coeffs[i] = rocof_low_pass_coeffs[i]
 
 class PMUEstimator:

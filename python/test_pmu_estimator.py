@@ -161,8 +161,10 @@ class TestPMUEstimator(unittest.TestCase):
         if not self.library_available:
             return
         
-        # Skip this test as INI configuration can cause floating point errors
-        # when the INI parser encounters invalid data
+        # Skip this test - the C library's INI parser (iniparser) has issues with
+        # temporary files and can cause division by zero errors when reading malformed
+        # or incomplete INI data. This is a known limitation of the underlying C library.
+        # To test INI configuration, use the actual config files from the repository.
         self.skipTest("INI configuration test skipped - use config file from repository")
 
     def test_estimate_known_signal_50hz(self):
@@ -497,13 +499,12 @@ class TestEdgeCases(unittest.TestCase):
         # Use wrong window size (should be 2048)
         wrong_signal = [1.0] * 1000
         
-        # This might cause an error or return None
-        # The behavior depends on C library implementation
+        # This might cause an error or return None depending on C library implementation
         try:
             result = self.pmu.estimate(wrong_signal, 0.0)
             # If it doesn't crash, that's acceptable
-        except:
-            # If it raises an exception, that's also acceptable
+        except (ValueError, TypeError, OSError) as e:
+            # If it raises a specific exception, that's also acceptable
             pass
 
 
