@@ -41,7 +41,7 @@ Copyright:
     Confidential and Proprietary - University of Bologna.
 """
 
-from ctypes import CDLL, POINTER, c_bool, c_uint, Structure, byref, c_double, c_int
+from ctypes import CDLL, POINTER, c_bool, c_uint, Structure, byref, c_double, c_int, c_void_p, c_char_p, c_float
 import numpy as np
 import os
 import platform
@@ -58,9 +58,9 @@ class Phasor(Structure):
         ph (float): Phasor phase angle (radians)
         freq (float): Frequency (Hz)
     """
-    _fields_ = [("amp", c_double),
-                ("ph", c_double),
-                ("freq", c_double)]
+    _fields_ = [("amp", c_float),
+                ("ph", c_float),
+                ("freq", c_float)]
 
 class PmuFrame(Structure):
     """
@@ -74,7 +74,7 @@ class PmuFrame(Structure):
         rocof (float): Rate of Change of Frequency (Hz/s)
     """
     _fields_ = [("synchrophasor", Phasor),
-                ("rocof", c_double)]
+                ("rocof", c_float)]
 
     def __init__(self, amp=0.0, ph=0.0, freq=0.0, rocof=0.0):
         """
@@ -107,33 +107,33 @@ class SynchrophasorEstimatorParams(Structure):
                 ("P", c_uint),
                 ("Q", c_uint),
                 ("iter_eipdft_enabled", c_bool),
-                ("interf_trig", c_double),
-                ("df", c_double),
-                ("norm_factor", c_double),
+                ("interf_trig", c_float),
+                ("df", c_float),
+                ("norm_factor", c_float),
                 ("phasor", Phasor)]
 
 class InternalBuffers(Structure):
-    _fields_ = [("Xf", POINTER(c_double)),
-                ("Xi", POINTER(c_double)),
-                ("dftbins", POINTER(c_double)),
-                ("hann_window", POINTER(c_double)),
-                ("signal_windows", POINTER(c_double) * 2)]
+    _fields_ = [("Xf", POINTER(c_float)),
+                ("Xi", POINTER(c_float)),
+                ("dftbins", POINTER(c_float)),
+                ("hann_window", POINTER(c_float)),
+                ("signal_windows", POINTER(c_float) * 2)]
 
 class HanningTransformConstants(Structure):
-    _fields_ = [("C0", c_double),
-                ("C1", c_double),
-                ("C2", c_double),
-                ("C3", c_double),
-                ("C4", c_double),
-                ("C5", c_double),
-                ("C6", c_double),
-                ("inv_norm_factor", c_double)]
+    _fields_ = [("C0", c_float),
+                ("C1", c_float),
+                ("C2", c_float),
+                ("C3", c_float),
+                ("C4", c_float),
+                ("C5", c_float),
+                ("C6", c_float),
+                ("inv_norm_factor", c_float)]
 
 class RocoFEstimationStates(Structure):
-    _fields_ = [("freq_old", c_double * 2),
-                ("thresholds", c_double * 3),
-                ("low_pass_coeff", c_double * 3),
-                ("delay_line", c_double * 2 * 2),
+    _fields_ = [("freq_old", c_float * 2),
+                ("thresholds", c_float * 3),
+                ("low_pass_coeff", c_float * 3),
+                ("delay_line", c_float * 2 * 2),
                 ("state", c_bool * 2)]
     
 
@@ -170,9 +170,9 @@ class EstimatorConfig(Structure):
                 ("P", c_uint),
                 ("Q", c_uint),
                 ("iter_eipdft", c_bool),
-                ("interf_trig", c_double),
-                ("rocof_thresh", c_double * 3),
-                ("rocof_low_pass_coeffs", c_double * 3)]
+                ("interf_trig", c_float),
+                ("rocof_thresh", c_float * 3),
+                ("rocof_low_pass_coeffs", c_float * 3)]
 
     def __init__(self, n_cycles, f0, frame_rate, fs, n_bins, P, Q, interf_trig, rocof_thresh, rocof_low_pass_coeffs, iter_eipdft = False):
         """
@@ -199,9 +199,11 @@ class EstimatorConfig(Structure):
         self.P = P
         self.Q = Q
         self.iter_eipdft = iter_eipdft
-        self.interf_trig = c_double(interf_trig)
-        self.rocof_thresh = (c_double * 3)(*rocof_thresh)
-        self.rocof_low_pass_coeffs = (c_double * 3)(*rocof_low_pass_coeffs)
+        self.interf_trig = interf_trig
+        for i in range(3):
+            self.rocof_thresh[i] = rocof_thresh[i]
+        for i in range(3):
+            self.rocof_low_pass_coeffs[i] = rocof_low_pass_coeffs[i]
 
 class PMUEstimator:
     """
@@ -265,10 +267,10 @@ class PMUEstimator:
 
         self.lib = CDLL(lib_path)
 
-        self.lib.pmu_init.argtypes = [POINTER(PmuContext), POINTER(EstimatorConfig), c_bool]
+        self.lib.pmu_init.argtypes = [POINTER(PmuContext), c_void_p, c_bool]
         self.lib.pmu_init.restype = c_int
 
-        self.lib.pmu_estimate.argtypes = [POINTER(PmuContext), POINTER(c_double), c_double, POINTER(PmuFrame)]
+        self.lib.pmu_estimate.argtypes = [POINTER(PmuContext), POINTER(c_float), c_float, POINTER(PmuFrame)]
         self.lib.pmu_estimate.restype = c_int
 
         self.lib.pmu_deinit.argtypes = [POINTER(PmuContext)]
@@ -300,7 +302,8 @@ class PMUEstimator:
         Returns:
             int: 0 on success, -1 on error
         """
-        return self.lib.pmu_init(byref(self.ctx), ini_file_path, self.CONFIG_FROM_INI)
+        ini_path_bytes = ini_file_path.encode('utf-8') if isinstance(ini_file_path, str) else ini_file_path
+        return self.lib.pmu_init(byref(self.ctx), ini_path_bytes, self.CONFIG_FROM_INI)
 
     def configure_from_class(self, config):
         """
@@ -342,8 +345,8 @@ class PMUEstimator:
             ...     print(f"ROCOF: {result['rocof']} Hz/s")
         """
         frame = PmuFrame()
-        input_signal = (c_double * len(input_signal_window))(*input_signal_window)
-        result = self.lib.pmu_estimate(byref(self.ctx), input_signal, c_double(mid_window_fracsec), byref(frame))
+        input_signal = (c_float * len(input_signal_window))(*input_signal_window)
+        result = self.lib.pmu_estimate(byref(self.ctx), input_signal, c_float(mid_window_fracsec), byref(frame))
 
         framedict = {
             "amp": frame.synchrophasor.amp,
