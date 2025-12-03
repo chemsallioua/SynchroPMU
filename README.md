@@ -1,4 +1,7 @@
 # __SynchroPMU__
+
+![Unit Tests](https://github.com/chemsallioua/SynchroPMU/workflows/Unit%20Tests/badge.svg)
+
 A __C implementation__ of the Phasor Measurment Unit Estimator (PMU Estimator) based on the Iterative Interpolated DFT Synchrophasor Estimation Algorithm.
 
 ## 📚 Documentation
@@ -267,3 +270,40 @@ This will install the library as a python package. Now you can import the packag
 After installing the python package, you can take a loot and run the example found in the __/python/examples__ directory by running the following command from the __/python/examples__ directory:
 
     python ./python/examples/example_usage.py
+
+## __Running Unit Tests__
+
+The project includes comprehensive unit tests for the Python API. To run the tests:
+
+### __Install Test Dependencies__
+
+    pip install -r python/requirements-test.txt
+
+### __Run Tests__
+
+Run all tests with pytest:
+
+    cd python
+    pytest test_pmu_estimator.py -v
+
+Or run with unittest:
+
+    cd python
+    python -m unittest test_pmu_estimator -v
+
+The test suite includes:
+- Configuration tests (from structure and INI files)
+- Estimation accuracy tests with known signals (50Hz, 60Hz)
+- Multiple instance tests
+- Edge case and error handling tests
+- ROCOF (Rate of Change of Frequency) estimation tests
+
+### __Continuous Integration__
+
+This repository uses GitHub Actions for automated testing. Every pull request triggers:
+- Building the C library
+- Installing dependencies
+- Running all unit tests on multiple Python versions (3.8-3.12)
+- Running C library performance benchmarks
+
+The CI/CD pipeline ensures all tests pass before merging changes.
